@@ -201,7 +201,7 @@
                 let type = "Collector Table";
                 let price = "100,00 €";
 
-                if (/DIECAST-(G|H)/.test(info) || /FIGURES-(C|D)/.test(info)) {
+                if (/DIECAST-(F|G|H)/.test(info) || /FIGURES-(C|D)/.test(info)) {
                     type = "Commercial Table";
                     price = "250,00 €";
                     m.classList.add('commercial'); 
