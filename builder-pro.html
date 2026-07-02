@@ -304,6 +304,7 @@
             • <b>Shift + Flechas</b>: mover 0.05%<br>
             • <b>Alt + Flechas</b>: mover 0.5%<br>
             • <b>Supr</b>: borrar selección<br>
+            • <b>Ctrl/Cmd + Z</b>: deshacer último cambio<br>
             • <b>Esc</b>: deseleccionar<br>
             • Rueda ratón: zoom
         </div>
@@ -317,6 +318,22 @@
         <button class="btn btn-purple" style="margin-top:8px;" onclick="applyNameEdit()">Aplicar nombre</button>
 
         <div id="selection-stats" class="statline"></div>
+
+        <div class="tuner-box" style="margin-top:10px; padding:10px;">
+            <div class="tuner-title" id="pos-title">Alinear por primera mesa</div>
+            <div class="grid-2">
+                <div>
+                    <label id="pos-x-label">X primera mesa</label>
+                    <input type="number" step="0.0001" id="inp-pos-x" onkeydown="event.stopPropagation()">
+                </div>
+                <div>
+                    <label id="pos-y-label">Y primera mesa</label>
+                    <input type="number" step="0.0001" id="inp-pos-y" onkeydown="event.stopPropagation()">
+                </div>
+            </div>
+            <button class="btn btn-dark" style="margin-top:8px;" onclick="applyFirstMesaPosition()">Aplicar X/Y</button>
+            <div class="mini-note" id="pos-note">En una isla, X/Y mueve toda la isla para que la mesa nº1 quede exactamente en esa posición.</div>
+        </div>
 
         <div class="grid-3" style="margin-top:10px;">
             <button class="btn btn-light" onclick="moveSelectionBy(0,-0.1)">↑ 0.1</button>
@@ -338,6 +355,7 @@
     </div>
 
     <div id="export-bar">
+        <button class="btn btn-light" onclick="undoLastAction()">↩️ Deshacer</button>
         <button class="btn btn-dark" onclick="exportHTML(true)">ߓ Copiar mesas.html</button>
         <button class="btn btn-green" onclick="exportHTML(false)">ߒ Descargar mesas.html</button>
     </div>
@@ -361,6 +379,9 @@
     let isDragging = false;
     let dragStart = null;
     let dragInitial = null;
+    let dragSnapshotSaved = false;
+    const undoStack = [];
+    const MAX_UNDO = 80;
 
     const container = document.getElementById('container');
     const viewport = document.getElementById('viewport');
@@ -368,6 +389,8 @@
     const capaMesas = document.getElementById('capa-mesas');
     const propPanel = document.getElementById('prop-float');
     const inputName = document.getElementById('inp-name');
+    const inputPosX = document.getElementById('inp-pos-x');
+    const inputPosY = document.getElementById('inp-pos-y');
     const groupOutline = document.getElementById('group-outline');
     const groupPicker = document.getElementById('group-picker');
 
@@ -401,6 +424,31 @@
     function pctNum(value) {
         if (!value) return 0;
         return parseFloat(String(value).replace('%','')) || 0;
+    }
+
+    function snapshotHTML() {
+        return exportLines();
+    }
+
+    function saveUndo(label = 'cambio') {
+        const html = snapshotHTML();
+        if (undoStack.length && undoStack[undoStack.length - 1].html === html) return;
+        undoStack.push({ html, label });
+        if (undoStack.length > MAX_UNDO) undoStack.shift();
+    }
+
+    function undoLastAction() {
+        if (!undoStack.length) return showError('No hay nada que deshacer.');
+        const state = undoStack.pop();
+        if (!state.html.trim()) {
+            clearSelection();
+            capaMesas.innerHTML = '';
+            refreshGroupPicker();
+            showOk('Deshecho: ' + state.label);
+            return;
+        }
+        loadMesas(state.html, 'Deshecho: ' + state.label, true);
+        showOk('Deshecho: ' + state.label);
     }
 
     function lastNumber(id) {
@@ -512,11 +560,21 @@
         loadMesas(html, 'Mesas importadas desde texto pegado');
     }
 
-    function loadMesas(html, sourceLabel) {
+    function loadMesas(html, sourceLabel, fromUndo = false) {
+        if (!fromUndo) saveUndo('importar / recargar mesas');
         const holder = document.createElement('div');
         holder.innerHTML = html;
         const sourceMesas = Array.from(holder.querySelectorAll('.mesa'));
-        if (!sourceMesas.length) return showError('No he encontrado ningún div con class="mesa".');
+        if (!sourceMesas.length) {
+            if (fromUndo) {
+                clearSelection();
+                capaMesas.innerHTML = '';
+                refreshGroupPicker();
+                showOk(sourceLabel + ': builder vacío.');
+                return;
+            }
+            return showError('No he encontrado ningún div con class="mesa".');
+        }
         clearSelection();
         capaMesas.innerHTML = '';
         sourceMesas.forEach(el => capaMesas.appendChild(normalizeMesa(el)));
@@ -526,6 +584,7 @@
 
     function clearAllTables() {
         if (!confirm('¿Vaciar todas las mesas del builder?')) return;
+        saveUndo('vaciar builder');
         clearSelection();
         capaMesas.innerHTML = '';
         refreshGroupPicker();
@@ -563,7 +622,12 @@
         document.getElementById('selection-title').textContent = `Isla seleccionada: ${key}`;
         document.getElementById('name-label').textContent = 'Prefijo de isla';
         document.getElementById('selection-stats').textContent = `${mesas.length} mesas. Cambiar el prefijo conserva la numeración final.`;
+        document.getElementById('pos-title').textContent = 'Alinear isla por primera mesa';
+        document.getElementById('pos-x-label').textContent = 'X mesa nº1';
+        document.getElementById('pos-y-label').textContent = 'Y mesa nº1';
+        document.getElementById('pos-note').textContent = 'Mueve toda la isla para que su primera mesa quede exactamente en X/Y.';
         propPanel.classList.add('active');
+        updatePositionInputs();
         updateGroupOutline();
         refreshGroupPicker();
     }
@@ -577,7 +641,12 @@
         document.getElementById('selection-title').textContent = `Mesa seleccionada`;
         document.getElementById('name-label').textContent = 'ID exacto de mesa';
         document.getElementById('selection-stats').textContent = `Grupo actual: ${groupKeyForId(mesa.getAttribute('data-info'))}`;
+        document.getElementById('pos-title').textContent = 'Posición de mesa';
+        document.getElementById('pos-x-label').textContent = 'X mesa';
+        document.getElementById('pos-y-label').textContent = 'Y mesa';
+        document.getElementById('pos-note').textContent = 'Mueve solo esta mesa a la posición exacta X/Y.';
         propPanel.classList.add('active');
+        updatePositionInputs();
         groupOutline.style.display = 'none';
         refreshGroupPicker();
     }
@@ -619,6 +688,47 @@
         groupOutline.querySelector('.tag').textContent = selectedKey;
     }
 
+    function selectedTargets() {
+        if (selectedType === 'group' && selectedKey) return getGroups().get(selectedKey) || [];
+        if (selectedType === 'table' && selectedMesa) return [selectedMesa];
+        return [];
+    }
+
+    function firstMesaForSelection() {
+        const targets = selectedTargets().filter(Boolean).sort(sortById);
+        return targets[0] || null;
+    }
+
+    function updatePositionInputs() {
+        const first = firstMesaForSelection();
+        if (!first) {
+            inputPosX.value = '';
+            inputPosY.value = '';
+            return;
+        }
+        inputPosX.value = pctNum(first.style.left).toFixed(4);
+        inputPosY.value = pctNum(first.style.top).toFixed(4);
+    }
+
+    function applyFirstMesaPosition() {
+        const first = firstMesaForSelection();
+        if (!first) return showError('Selecciona una isla o una mesa antes de aplicar X/Y.');
+        const newX = parseFloat(inputPosX.value);
+        const newY = parseFloat(inputPosY.value);
+        if (!Number.isFinite(newX) || !Number.isFinite(newY)) return showError('Introduce valores X/Y válidos.');
+        const dx = newX - pctNum(first.style.left);
+        const dy = newY - pctNum(first.style.top);
+        if (Math.abs(dx) < 0.00001 && Math.abs(dy) < 0.00001) return;
+        saveUndo('aplicar X/Y');
+        selectedTargets().forEach(m => {
+            m.style.left = (pctNum(m.style.left) + dx).toFixed(4) + '%';
+            m.style.top = (pctNum(m.style.top) + dy).toFixed(4) + '%';
+        });
+        if (selectedType === 'group') updateGroupOutline();
+        updatePositionInputs();
+        showOk('Posición X/Y aplicada.');
+    }
+
     function mouseToMapPct(e) {
         const rect = mapImg.getBoundingClientRect();
         return {
@@ -628,6 +738,8 @@
     }
 
     function startDrag(e) {
+        saveUndo('mover selección');
+        dragSnapshotSaved = true;
         isDragging = true;
         dragStart = mouseToMapPct(e);
         if (selectedType === 'group') {
@@ -649,17 +761,20 @@
             item.el.style.top = (item.top + dy).toFixed(4) + '%';
         });
         if (selectedType === 'group') updateGroupOutline();
+        updatePositionInputs();
     });
 
     document.addEventListener('mouseup', () => {
         isDragging = false;
         dragStart = null;
         dragInitial = null;
+        dragSnapshotSaved = false;
     });
 
     function applyNameEdit() {
         const newName = inputName.value.trim().toUpperCase();
         if (!newName) return;
+        saveUndo('renombrar selección');
         if (selectedType === 'table' && selectedMesa) {
             selectedMesa.setAttribute('data-info', newName);
             selectedMesa.textContent = labelForMesa(newName);
@@ -683,14 +798,14 @@
 
     function moveSelectionBy(dx, dy) {
         if (!selectedType) return;
-        let targets = [];
-        if (selectedType === 'group') targets = getGroups().get(selectedKey) || [];
-        if (selectedType === 'table') targets = [selectedMesa];
+        saveUndo('mover selección');
+        const targets = selectedTargets();
         targets.forEach(m => {
             m.style.left = (pctNum(m.style.left) + dx).toFixed(4) + '%';
             m.style.top = (pctNum(m.style.top) + dy).toFixed(4) + '%';
         });
         if (selectedType === 'group') updateGroupOutline();
+        updatePositionInputs();
     }
 
     function deleteSelected() {
@@ -698,9 +813,11 @@
         if (selectedType === 'group') {
             const mesas = getGroups().get(selectedKey) || [];
             if (!confirm(`¿Eliminar la isla ${selectedKey} completa (${mesas.length} mesas)?`)) return;
+            saveUndo('eliminar isla');
             mesas.forEach(m => m.remove());
         } else if (selectedType === 'table' && selectedMesa) {
             if (!confirm(`¿Eliminar ${selectedMesa.getAttribute('data-info')}?`)) return;
+            saveUndo('eliminar mesa');
             selectedMesa.remove();
         }
         clearSelection();
@@ -713,6 +830,7 @@
 
     function duplicateSelection(dir) {
         if (!selectedType) return;
+        saveUndo('duplicar selección');
         let targets = [];
         let newKey = null;
         if (selectedType === 'group') {
@@ -778,6 +896,7 @@
     }
 
     function spawnBlock() {
+        saveUndo('crear bloque / mesa');
         const count = parseInt(document.getElementById('b-count').value, 10);
         const prefix = document.getElementById('b-prefix').value.trim().toUpperCase() || 'DIECAST-X';
         const w = parseFloat(document.getElementById('m-w').value) || 1.17;
@@ -832,6 +951,11 @@
 
     document.addEventListener('keydown', e => {
         if (document.activeElement && ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) return;
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+            e.preventDefault();
+            undoLastAction();
+            return;
+        }
         if (e.key === 'Escape') return clearSelection();
         if (!selectedType) return;
         if (e.key.startsWith('Arrow')) {
