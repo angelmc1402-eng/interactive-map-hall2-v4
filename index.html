@@ -190,15 +190,13 @@
                 let zoneName = parts.length >= 2 ? parts[1] : "-";
                 let tableNum = parts.length >= 3 ? parts[2] : (parts[1] || "0"); 
 
-                if (info.includes("MANGACOM")) {
-                    catName = "Manga & Comics";
-                } else if (info.includes("FIGURES")) {
-                    catName = "Figures & Dolls";
-                } else if (info.includes("RETRO")) {
-                    catName = "Retro & Fashion";
-                    zoneName = "-";
-                    tableNum = parts[1]; 
-                }
+                if (info.includes("FIGURES")) {
+    catName = "Figures & Dolls";
+} else if (info.includes("RETRO")) {
+    catName = "Retro & Fashion";
+    zoneName = "-";
+    tableNum = parts[1]; 
+}
 
                 let type = "Collector Table";
                 let price = "100,00 €";
