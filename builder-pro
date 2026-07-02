@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HALL 2 - Tables Builder Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --verde-base: #2ecc71;
+        --verde-oscuro: #27ae60;
+        --azul-sel: #00d2d3;
+        --azul-soft: rgba(0, 210, 211, 0.15);
+        --rojo-del: #ff6b6b;
+        --naranja-rot: #ff9f43;
+        --morado: #8e44ad;
+        --dark-bg: #1f2937;
+        --panel-bg: #ffffff;
+        --fuente: 'Inter', sans-serif;
+    }
+
+    body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--dark-bg);
+        font-family: var(--fuente);
+    }
+
+    #viewport {
+        width: 100vw;
+        height: 100vh;
+        overflow: auto;
+        display: block;
+        cursor: grab;
+    }
+    #viewport:active { cursor: grabbing; }
+
+    #container {
+        position: relative;
+        transform-origin: 0 0;
+        transition: transform 0.05s ease-out;
+        display: inline-block;
+    }
+
+    #map-img {
+        display: block;
+        image-rendering: high-quality;
+        max-width: none;
+        pointer-events: none;
+        user-select: none;
+        -webkit-user-drag: none;
+    }
+
+    #capa-mesas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    .mesa {
+        position: absolute;
+        border: 1.5px solid var(--verde-base);
+        background: rgba(46, 204, 113, 0.48);
+        box-sizing: border-box;
+        border-radius: 2px;
+        pointer-events: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 8px;
+        color: #fff;
+        font-weight: 800;
+        text-shadow: 1px 1px 0 #000;
+        cursor: pointer;
+        transition: background 0.08s ease, border-color 0.08s ease, box-shadow 0.08s ease;
+    }
+    .mesa:hover { background: rgba(46, 204, 113, 0.85); z-index: 50; }
+    .mesa.selected-single {
+        background: rgba(255, 159, 67, 0.86);
+        border-color: #fff;
+        box-shadow: 0 0 12px rgba(255,159,67,0.95);
+        z-index: 400;
+    }
+    .mesa.selected-block {
+        background: rgba(0, 210, 211, 0.72);
+        border-color: #fff;
+        box-shadow: 0 0 10px rgba(0,210,211,0.85);
+        z-index: 300;
+    }
+
+    #group-outline {
+        position: absolute;
+        display: none;
+        pointer-events: none;
+        border: 2px dashed var(--azul-sel);
+        background: var(--azul-soft);
+        box-shadow: 0 0 18px rgba(0,210,211,0.5);
+        z-index: 250;
+        box-sizing: border-box;
+    }
+    #group-outline .tag {
+        position: absolute;
+        left: 0;
+        top: -24px;
+        background: var(--azul-sel);
+        color: #0f172a;
+        padding: 4px 8px;
+        border-radius: 6px 6px 0 0;
+        font-size: 11px;
+        font-weight: 800;
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+
+    #palette {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        width: 345px;
+        max-height: calc(100vh - 20px);
+        overflow: auto;
+        background: var(--panel-bg);
+        padding: 18px;
+        border-radius: 10px;
+        box-shadow: 5px 0 30px rgba(0,0,0,0.35);
+        z-index: 20000;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+    #palette h3 { margin: 0; font-size: 16px; color: #111827; text-transform: uppercase; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+
+    .box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 13px; }
+    .box-title { font-size: 12px; font-weight: 800; color: #475569; margin-bottom: 10px; text-transform: uppercase; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    label { font-size: 10px; font-weight: 800; color: #64748b; display: block; margin-bottom: 4px; text-transform: uppercase; }
+    input, select, textarea {
+        width: 100%;
+        padding: 7px;
+        border: 1px solid #cbd5e1;
+        border-radius: 5px;
+        font-family: monospace;
+        font-size: 12px;
+        box-sizing: border-box;
+        background: white;
+    }
+    textarea { min-height: 100px; resize: vertical; }
+
+    .btn {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-radius: 7px;
+        font-weight: 800;
+        cursor: pointer;
+        font-size: 12px;
+        transition: transform 0.15s, filter 0.15s;
+    }
+    .btn:hover { transform: translateY(-1px); filter: brightness(0.96); }
+    .btn-primary { background: #3b82f6; color: white; box-shadow: 0 4px 10px rgba(59,130,246,0.25); }
+    .btn-green { background: var(--verde-base); color: white; }
+    .btn-dark { background: #111827; color: #00d2d3; border: 1px solid #00d2d3; }
+    .btn-orange { background: var(--naranja-rot); color: white; }
+    .btn-red { background: var(--rojo-del); color: white; }
+    .btn-purple { background: var(--morado); color: white; }
+    .btn-light { background: #e2e8f0; color: #0f172a; }
+
+    .mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .mode-btn { background: #e2e8f0; color: #0f172a; }
+    .mode-btn.active { background: #00d2d3; color: #0f172a; box-shadow: inset 0 0 0 2px #0f172a; }
+
+    #prop-float {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+        z-index: 20000;
+        width: 285px;
+        display: none;
+    }
+    #prop-float.active { display: block; animation: popIn 0.2s cubic-bezier(0.175,0.885,0.32,1.275); }
+    @keyframes popIn { from { transform: scale(0.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    #selection-title { margin: 0 0 10px; font-size: 13px; font-weight: 800; color: #111827; }
+    .mini-note { font-size: 11px; color: #64748b; line-height: 1.45; margin-top: 6px; }
+    .statline { font-size: 11px; color: #334155; background: #f1f5f9; padding: 8px; border-radius: 6px; margin-top: 8px; }
+
+    #export-bar {
+        position: fixed;
+        bottom: 20px;
+        left: 375px;
+        right: 20px;
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        z-index: 20000;
+        pointer-events: none;
+    }
+    #export-bar .btn { width: auto; padding: 13px 24px; border-radius: 999px; pointer-events: auto; box-shadow: 0 10px 22px rgba(0,0,0,0.35); }
+
+    #clipboard-area { position: absolute; left: -9999px; top: -9999px; }
+    .shortcuts { font-size: 11px; color: #64748b; line-height: 1.6; background: #f1f5f9; padding: 10px; border-radius: 6px; }
+    .error { background: #fff1f2; color: #9f1239; border: 1px solid #fecdd3; padding: 10px; border-radius: 8px; font-size: 12px; display:none; }
+    .ok { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 10px; border-radius: 8px; font-size: 12px; display:none; }
+</style>
+</head>
+<body>
+    <div id="palette">
+        <h3>ߏ️ Hall 2 · Tables Builder Pro</h3>
+
+        <div class="box">
+            <div class="box-title">Modo de edición</div>
+            <div class="mode-row">
+                <button id="btn-mode-block" class="btn mode-btn active" onclick="setMode('block')">Mover islas</button>
+                <button id="btn-mode-table" class="btn mode-btn" onclick="setMode('table')">Mover mesas</button>
+            </div>
+            <div class="mini-note">En modo islas mueves todas las mesas del mismo prefijo. En modo mesas mueves solo la mesa pulsada.</div>
+        </div>
+
+        <div class="box">
+            <div class="box-title">Precargar / importar</div>
+            <div class="grid-2">
+                <button class="btn btn-primary" onclick="loadMesasFromFile()">ߓ Cargar mesas.html</button>
+                <button class="btn btn-light" onclick="clearAllTables()">ߧ Vaciar</button>
+            </div>
+            <div class="mini-note">Debe estar en la misma carpeta que este builder. Si estás abriendo en local y el navegador bloquea el fetch, usa el pegado manual.</div>
+            <details style="margin-top:10px;">
+                <summary style="font-size:12px; font-weight:800; cursor:pointer;">Pegar mesas.html manualmente</summary>
+                <textarea id="paste-source" placeholder="Pega aquí tus <div class=&quot;mesa&quot; ...></div>"></textarea>
+                <button class="btn btn-green" style="margin-top:8px;" onclick="loadMesasFromText()">Importar texto pegado</button>
+            </details>
+            <div id="msg-error" class="error"></div>
+            <div id="msg-ok" class="ok"></div>
+        </div>
+
+        <div class="box">
+            <div class="box-title">Crear bloque nuevo</div>
+            <div class="grid-2">
+                <div>
+                    <label>Nº mesas</label>
+                    <select id="b-count">
+                        <option value="1">Mesa individual</option>
+                        <option value="20">Bloque 20</option>
+                        <option value="24">Bloque 24</option>
+                        <option value="26" selected>Bloque 26</option>
+                        <option value="28">Bloque 28</option>
+                        <option value="36">Bloque 36</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Plantilla</label>
+                    <select id="b-template" onchange="applyTemplate()">
+                        <option value="hall2-small" selected>Hall 2 · 26</option>
+                        <option value="hall2-tall">Hall 2 · 36</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-top:8px;">
+                <label>Prefijo o ID</label>
+                <input type="text" id="b-prefix" value="DIECAST-A">
+            </div>
+            <div class="grid-2" style="margin-top:8px;">
+                <div>
+                    <label>Ancho mesa %</label>
+                    <input type="number" step="0.01" id="m-w" value="1.17">
+                </div>
+                <div>
+                    <label>Alto mesa %</label>
+                    <input type="number" step="0.01" id="m-h" value="0.50">
+                </div>
+            </div>
+            <div class="grid-2" style="margin-top:8px;">
+                <div>
+                    <label>Gap X %</label>
+                    <input type="number" step="0.01" id="g-x" value="0.02">
+                </div>
+                <div>
+                    <label>Gap Y %</label>
+                    <input type="number" step="0.01" id="g-y" value="0.05">
+                </div>
+            </div>
+            <button class="btn btn-primary" style="margin-top:10px;" onclick="spawnBlock()">➕ Inyectar bloque</button>
+        </div>
+
+        <div class="box">
+            <div class="box-title">Seleccionar isla</div>
+            <select id="group-picker" onchange="selectGroupFromPicker()">
+                <option value="">— sin islas cargadas —</option>
+            </select>
+        </div>
+
+        <div class="shortcuts">
+            <b>Atajos:</b><br>
+            • <b>Flechas</b>: micro-ajuste 0.005%<br>
+            • <b>Shift + Flechas</b>: mover 0.05%<br>
+            • <b>Alt + Flechas</b>: mover 0.5%<br>
+            • <b>Supr</b>: borrar selección<br>
+            • <b>Esc</b>: deseleccionar<br>
+            • Rueda ratón: zoom
+        </div>
+    </div>
+
+    <div id="prop-float">
+        <h4 id="selection-title">Selección</h4>
+
+        <label id="name-label">ID / Prefijo</label>
+        <input type="text" id="inp-name" spellcheck="false">
+        <button class="btn btn-purple" style="margin-top:8px;" onclick="applyNameEdit()">Aplicar nombre</button>
+
+        <div id="selection-stats" class="statline"></div>
+
+        <div class="grid-3" style="margin-top:10px;">
+            <button class="btn btn-light" onclick="moveSelectionBy(0,-0.1)">↑ 0.1</button>
+            <button class="btn btn-light" onclick="moveSelectionBy(0,0.1)">↓ 0.1</button>
+            <button class="btn btn-light" onclick="moveSelectionBy(0,1)">↓ 1%</button>
+        </div>
+        <div class="grid-2" style="margin-top:8px;">
+            <button class="btn btn-light" onclick="moveSelectionBy(-0.1,0)">← 0.1</button>
+            <button class="btn btn-light" onclick="moveSelectionBy(0.1,0)">→ 0.1</button>
+        </div>
+
+        <div class="grid-2" style="margin-top:10px;">
+            <button class="btn btn-green" onclick="duplicateSelection('right')">Duplicar →</button>
+            <button class="btn btn-green" onclick="duplicateSelection('down')">Duplicar ↓</button>
+        </div>
+
+        <button class="btn btn-red" style="margin-top:10px;" onclick="deleteSelected()">ߗ️ Eliminar selección</button>
+        <div class="mini-note">En islas, “Aplicar nombre” cambia el prefijo y conserva la numeración. En mesas, cambia solo ese ID.</div>
+    </div>
+
+    <div id="export-bar">
+        <button class="btn btn-dark" onclick="exportHTML(true)">ߓ Copiar mesas.html</button>
+        <button class="btn btn-green" onclick="exportHTML(false)">ߒ Descargar mesas.html</button>
+    </div>
+
+    <div id="viewport">
+        <div id="container">
+            <img id="map-img" src="Hall 2.png" alt="Map Hall 2">
+            <div id="capa-mesas"></div>
+            <div id="group-outline"><div class="tag"></div></div>
+        </div>
+    </div>
+
+    <textarea id="clipboard-area"></textarea>
+
+<script>
+    let scale = 0.5;
+    let mode = 'block';
+    let selectedType = null; // 'group' | 'table'
+    let selectedKey = null;
+    let selectedMesa = null;
+    let isDragging = false;
+    let dragStart = null;
+    let dragInitial = null;
+
+    const container = document.getElementById('container');
+    const viewport = document.getElementById('viewport');
+    const mapImg = document.getElementById('map-img');
+    const capaMesas = document.getElementById('capa-mesas');
+    const propPanel = document.getElementById('prop-float');
+    const inputName = document.getElementById('inp-name');
+    const groupOutline = document.getElementById('group-outline');
+    const groupPicker = document.getElementById('group-picker');
+
+    window.onload = () => {
+        if (mapImg.complete) init();
+        else mapImg.onload = init;
+    };
+
+    function init() {
+        fit();
+        viewport.addEventListener('wheel', handleWheel, { passive: false });
+        loadMesasFromFile();
+    }
+
+    function showError(msg) {
+        const e = document.getElementById('msg-error');
+        const ok = document.getElementById('msg-ok');
+        ok.style.display = 'none';
+        e.textContent = msg;
+        e.style.display = 'block';
+    }
+
+    function showOk(msg) {
+        const e = document.getElementById('msg-error');
+        const ok = document.getElementById('msg-ok');
+        e.style.display = 'none';
+        ok.textContent = msg;
+        ok.style.display = 'block';
+    }
+
+    function pctNum(value) {
+        if (!value) return 0;
+        return parseFloat(String(value).replace('%','')) || 0;
+    }
+
+    function lastNumber(id) {
+        const m = String(id || '').match(/-(\d+)$/);
+        return m ? parseInt(m[1], 10) : null;
+    }
+
+    function groupKeyForId(id) {
+        id = String(id || '').trim();
+        if (!id) return 'SIN-ID';
+        return id.replace(/-\d+$/, '');
+    }
+
+    function labelForMesa(id) {
+        const n = lastNumber(id);
+        if (n !== null) return String(n);
+        const parts = String(id || '').split('-');
+        return parts[parts.length - 1] || '';
+    }
+
+    function sortById(a, b) {
+        const ida = a.getAttribute('data-info') || '';
+        const idb = b.getAttribute('data-info') || '';
+        const ka = groupKeyForId(ida);
+        const kb = groupKeyForId(idb);
+        if (ka !== kb) return ka.localeCompare(kb, 'es', { numeric: true });
+        const na = lastNumber(ida) ?? 99999;
+        const nb = lastNumber(idb) ?? 99999;
+        if (na !== nb) return na - nb;
+        return ida.localeCompare(idb, 'es', { numeric: true });
+    }
+
+    function getMesas() {
+        return Array.from(capaMesas.querySelectorAll('.mesa'));
+    }
+
+    function getGroups() {
+        const map = new Map();
+        getMesas().forEach(m => {
+            const key = groupKeyForId(m.getAttribute('data-info'));
+            if (!map.has(key)) map.set(key, []);
+            map.get(key).push(m);
+        });
+        map.forEach(arr => arr.sort(sortById));
+        return map;
+    }
+
+    function refreshGroupPicker() {
+        const current = selectedType === 'group' ? selectedKey : '';
+        const groups = Array.from(getGroups().keys()).sort((a,b) => a.localeCompare(b, 'es', { numeric: true }));
+        groupPicker.innerHTML = '';
+        if (!groups.length) {
+            groupPicker.innerHTML = '<option value="">— sin islas cargadas —</option>';
+            return;
+        }
+        groupPicker.appendChild(new Option('— seleccionar isla —', ''));
+        groups.forEach(key => groupPicker.appendChild(new Option(`${key} · ${getGroups().get(key).length} mesas`, key)));
+        groupPicker.value = current || '';
+    }
+
+    function selectGroupFromPicker() {
+        const key = groupPicker.value;
+        if (key) {
+            setMode('block');
+            selectGroup(key);
+            centerOnSelection();
+        }
+    }
+
+    function addMesaEvents(mesa) {
+        mesa.addEventListener('mousedown', e => {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            e.stopPropagation();
+            if (mode === 'table') selectMesa(mesa);
+            else selectGroup(groupKeyForId(mesa.getAttribute('data-info')));
+            startDrag(e);
+        });
+    }
+
+    function normalizeMesa(el) {
+        const mesa = document.createElement('div');
+        mesa.className = 'mesa';
+        const id = el.getAttribute('data-info') || el.dataset.info || 'SIN-ID';
+        mesa.setAttribute('data-info', id.trim());
+        mesa.style.left = (el.style.left || '0%');
+        mesa.style.top = (el.style.top || '0%');
+        mesa.style.width = (el.style.width || '1%');
+        mesa.style.height = (el.style.height || '1%');
+        mesa.textContent = labelForMesa(id);
+        addMesaEvents(mesa);
+        return mesa;
+    }
+
+    async function loadMesasFromFile() {
+        try {
+            const resp = await fetch('mesas.html?v=' + Date.now(), { cache: 'no-store' });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const html = await resp.text();
+            loadMesas(html, 'mesas.html cargado');
+        } catch (err) {
+            showError('No he podido cargar mesas.html automáticamente. Usa el pegado manual si estás en local. Detalle: ' + err.message);
+        }
+    }
+
+    function loadMesasFromText() {
+        const html = document.getElementById('paste-source').value;
+        if (!html.trim()) return showError('Pega primero el contenido de mesas.html.');
+        loadMesas(html, 'Mesas importadas desde texto pegado');
+    }
+
+    function loadMesas(html, sourceLabel) {
+        const holder = document.createElement('div');
+        holder.innerHTML = html;
+        const sourceMesas = Array.from(holder.querySelectorAll('.mesa'));
+        if (!sourceMesas.length) return showError('No he encontrado ningún div con class="mesa".');
+        clearSelection();
+        capaMesas.innerHTML = '';
+        sourceMesas.forEach(el => capaMesas.appendChild(normalizeMesa(el)));
+        refreshGroupPicker();
+        showOk(`${sourceLabel}: ${sourceMesas.length} mesas / ${getGroups().size} islas.`);
+    }
+
+    function clearAllTables() {
+        if (!confirm('¿Vaciar todas las mesas del builder?')) return;
+        clearSelection();
+        capaMesas.innerHTML = '';
+        refreshGroupPicker();
+        showOk('Builder vacío.');
+    }
+
+    function setMode(newMode) {
+        mode = newMode;
+        document.getElementById('btn-mode-block').classList.toggle('active', mode === 'block');
+        document.getElementById('btn-mode-table').classList.toggle('active', mode === 'table');
+        clearSelection();
+    }
+
+    function clearSelection() {
+        selectedType = null;
+        selectedKey = null;
+        selectedMesa = null;
+        getMesas().forEach(m => m.classList.remove('selected-single', 'selected-block'));
+        propPanel.classList.remove('active');
+        groupOutline.style.display = 'none';
+        refreshGroupPicker();
+    }
+
+    viewport.addEventListener('mousedown', e => {
+        if (e.target === viewport || e.target === container || e.target === mapImg || e.target === capaMesas) clearSelection();
+    });
+
+    function selectGroup(key) {
+        clearSelectionNoRefresh();
+        selectedType = 'group';
+        selectedKey = key;
+        const mesas = getGroups().get(key) || [];
+        mesas.forEach(m => m.classList.add('selected-block'));
+        inputName.value = key;
+        document.getElementById('selection-title').textContent = `Isla seleccionada: ${key}`;
+        document.getElementById('name-label').textContent = 'Prefijo de isla';
+        document.getElementById('selection-stats').textContent = `${mesas.length} mesas. Cambiar el prefijo conserva la numeración final.`;
+        propPanel.classList.add('active');
+        updateGroupOutline();
+        refreshGroupPicker();
+    }
+
+    function selectMesa(mesa) {
+        clearSelectionNoRefresh();
+        selectedType = 'table';
+        selectedMesa = mesa;
+        mesa.classList.add('selected-single');
+        inputName.value = mesa.getAttribute('data-info');
+        document.getElementById('selection-title').textContent = `Mesa seleccionada`;
+        document.getElementById('name-label').textContent = 'ID exacto de mesa';
+        document.getElementById('selection-stats').textContent = `Grupo actual: ${groupKeyForId(mesa.getAttribute('data-info'))}`;
+        propPanel.classList.add('active');
+        groupOutline.style.display = 'none';
+        refreshGroupPicker();
+    }
+
+    function clearSelectionNoRefresh() {
+        getMesas().forEach(m => m.classList.remove('selected-single', 'selected-block'));
+        selectedType = null;
+        selectedKey = null;
+        selectedMesa = null;
+        groupOutline.style.display = 'none';
+    }
+
+    function bboxForMesas(mesas) {
+        let minL = Infinity, minT = Infinity, maxR = -Infinity, maxB = -Infinity;
+        mesas.forEach(m => {
+            const l = pctNum(m.style.left);
+            const t = pctNum(m.style.top);
+            const w = pctNum(m.style.width);
+            const h = pctNum(m.style.height);
+            minL = Math.min(minL, l);
+            minT = Math.min(minT, t);
+            maxR = Math.max(maxR, l + w);
+            maxB = Math.max(maxB, t + h);
+        });
+        if (!mesas.length) return null;
+        return { left: minL, top: minT, width: maxR - minL, height: maxB - minT };
+    }
+
+    function updateGroupOutline() {
+        if (selectedType !== 'group' || !selectedKey) return;
+        const mesas = getGroups().get(selectedKey) || [];
+        const box = bboxForMesas(mesas);
+        if (!box) return;
+        groupOutline.style.display = 'block';
+        groupOutline.style.left = box.left.toFixed(4) + '%';
+        groupOutline.style.top = box.top.toFixed(4) + '%';
+        groupOutline.style.width = box.width.toFixed(4) + '%';
+        groupOutline.style.height = box.height.toFixed(4) + '%';
+        groupOutline.querySelector('.tag').textContent = selectedKey;
+    }
+
+    function mouseToMapPct(e) {
+        const rect = mapImg.getBoundingClientRect();
+        return {
+            x: ((e.clientX - rect.left) / rect.width) * 100,
+            y: ((e.clientY - rect.top) / rect.height) * 100
+        };
+    }
+
+    function startDrag(e) {
+        isDragging = true;
+        dragStart = mouseToMapPct(e);
+        if (selectedType === 'group') {
+            const mesas = getGroups().get(selectedKey) || [];
+            dragInitial = mesas.map(m => ({ el: m, left: pctNum(m.style.left), top: pctNum(m.style.top) }));
+        } else if (selectedType === 'table') {
+            dragInitial = [{ el: selectedMesa, left: pctNum(selectedMesa.style.left), top: pctNum(selectedMesa.style.top) }];
+        }
+    }
+
+    document.addEventListener('mousemove', e => {
+        if (!isDragging || !dragInitial) return;
+        e.preventDefault();
+        const now = mouseToMapPct(e);
+        const dx = now.x - dragStart.x;
+        const dy = now.y - dragStart.y;
+        dragInitial.forEach(item => {
+            item.el.style.left = (item.left + dx).toFixed(4) + '%';
+            item.el.style.top = (item.top + dy).toFixed(4) + '%';
+        });
+        if (selectedType === 'group') updateGroupOutline();
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+        dragStart = null;
+        dragInitial = null;
+    });
+
+    function applyNameEdit() {
+        const newName = inputName.value.trim().toUpperCase();
+        if (!newName) return;
+        if (selectedType === 'table' && selectedMesa) {
+            selectedMesa.setAttribute('data-info', newName);
+            selectedMesa.textContent = labelForMesa(newName);
+            selectMesa(selectedMesa);
+            showOk(`Mesa renombrada a ${newName}.`);
+        } else if (selectedType === 'group' && selectedKey) {
+            const mesas = getGroups().get(selectedKey) || [];
+            mesas.sort(sortById).forEach((m, index) => {
+                const oldId = m.getAttribute('data-info');
+                const n = lastNumber(oldId) ?? (index + 1);
+                const newId = `${newName}-${n}`;
+                m.setAttribute('data-info', newId);
+                m.textContent = labelForMesa(newId);
+            });
+            selectedKey = newName;
+            selectGroup(newName);
+            showOk(`Isla renombrada a ${newName}.`);
+        }
+        refreshGroupPicker();
+    }
+
+    function moveSelectionBy(dx, dy) {
+        if (!selectedType) return;
+        let targets = [];
+        if (selectedType === 'group') targets = getGroups().get(selectedKey) || [];
+        if (selectedType === 'table') targets = [selectedMesa];
+        targets.forEach(m => {
+            m.style.left = (pctNum(m.style.left) + dx).toFixed(4) + '%';
+            m.style.top = (pctNum(m.style.top) + dy).toFixed(4) + '%';
+        });
+        if (selectedType === 'group') updateGroupOutline();
+    }
+
+    function deleteSelected() {
+        if (!selectedType) return;
+        if (selectedType === 'group') {
+            const mesas = getGroups().get(selectedKey) || [];
+            if (!confirm(`¿Eliminar la isla ${selectedKey} completa (${mesas.length} mesas)?`)) return;
+            mesas.forEach(m => m.remove());
+        } else if (selectedType === 'table' && selectedMesa) {
+            if (!confirm(`¿Eliminar ${selectedMesa.getAttribute('data-info')}?`)) return;
+            selectedMesa.remove();
+        }
+        clearSelection();
+        refreshGroupPicker();
+    }
+
+    function nextLetterInPrefix(prefix) {
+        return prefix.replace(/([A-Z])(?!.*[A-Z])/, ch => String.fromCharCode(ch.charCodeAt(0) + 1));
+    }
+
+    function duplicateSelection(dir) {
+        if (!selectedType) return;
+        let targets = [];
+        let newKey = null;
+        if (selectedType === 'group') {
+            targets = getGroups().get(selectedKey) || [];
+            newKey = nextLetterInPrefix(selectedKey);
+        } else if (selectedType === 'table') {
+            targets = [selectedMesa];
+        }
+        if (!targets.length) return;
+        const box = bboxForMesas(targets);
+        const offsetX = dir === 'right' ? box.width + 0.35 : 0;
+        const offsetY = dir === 'down' ? box.height + 0.8 : 0;
+        const newEls = targets.sort(sortById).map((m, idx) => {
+            const clone = m.cloneNode(true);
+            clone.classList.remove('selected-single', 'selected-block');
+            let id = m.getAttribute('data-info');
+            if (selectedType === 'group') {
+                const n = lastNumber(id) ?? (idx + 1);
+                id = `${newKey}-${n}`;
+            } else {
+                const n = lastNumber(id);
+                id = n !== null ? id.replace(/-\d+$/, '-' + (n + 1)) : id + '-2';
+            }
+            clone.setAttribute('data-info', id);
+            clone.textContent = labelForMesa(id);
+            clone.style.left = (pctNum(m.style.left) + offsetX).toFixed(4) + '%';
+            clone.style.top = (pctNum(m.style.top) + offsetY).toFixed(4) + '%';
+            addMesaEvents(clone);
+            capaMesas.appendChild(clone);
+            return clone;
+        });
+        refreshGroupPicker();
+        if (selectedType === 'group') selectGroup(newKey);
+        else selectMesa(newEls[0]);
+    }
+
+    function centerOnSelection() {
+        let mesas = [];
+        if (selectedType === 'group') mesas = getGroups().get(selectedKey) || [];
+        if (selectedType === 'table') mesas = [selectedMesa];
+        const box = bboxForMesas(mesas);
+        if (!box) return;
+        const x = ((box.left + box.width / 2) / 100) * mapImg.naturalWidth * scale;
+        const y = ((box.top + box.height / 2) / 100) * mapImg.naturalHeight * scale;
+        viewport.scrollTo({ left: Math.max(0, x - viewport.clientWidth / 2), top: Math.max(0, y - viewport.clientHeight / 2), behavior: 'smooth' });
+    }
+
+    function applyTemplate() {
+        const tpl = document.getElementById('b-template').value;
+        if (tpl === 'hall2-small') {
+            document.getElementById('b-count').value = 26;
+            document.getElementById('m-w').value = 1.17;
+            document.getElementById('m-h').value = 0.50;
+            document.getElementById('g-x').value = 0.02;
+            document.getElementById('g-y').value = 0.05;
+        } else if (tpl === 'hall2-tall') {
+            document.getElementById('b-count').value = 36;
+            document.getElementById('m-w').value = 1.17;
+            document.getElementById('m-h').value = 0.50;
+            document.getElementById('g-x').value = 0.02;
+            document.getElementById('g-y').value = 0.05;
+        }
+    }
+
+    function spawnBlock() {
+        const count = parseInt(document.getElementById('b-count').value, 10);
+        const prefix = document.getElementById('b-prefix').value.trim().toUpperCase() || 'DIECAST-X';
+        const w = parseFloat(document.getElementById('m-w').value) || 1.17;
+        const h = parseFloat(document.getElementById('m-h').value) || 0.50;
+        const gapX = parseFloat(document.getElementById('g-x').value) || 0.02;
+        const gapY = parseFloat(document.getElementById('g-y').value) || 0.05;
+
+        const rect = viewport.getBoundingClientRect();
+        const mapRect = mapImg.getBoundingClientRect();
+        const center = {
+            x: ((rect.left + rect.width / 2 - mapRect.left) / mapRect.width) * 100,
+            y: ((rect.top + rect.height / 2 - mapRect.top) / mapRect.height) * 100
+        };
+
+        let coords = [];
+        if (count === 1) {
+            coords.push({ l: center.x, t: center.y, id: prefix });
+        } else {
+            // Plantilla isla Hall 2: arriba 3, derecha vertical, abajo 3, izquierda vertical.
+            const topCount = 3;
+            const bottomCount = 3;
+            const sideCount = Math.floor((count - topCount - bottomCount) / 2);
+            const blockW = (topCount * w) + ((topCount - 1) * gapX) + w * 0.25;
+            const blockH = ((sideCount + 1) * h) + (sideCount * gapY) + (h * 0.8);
+            const startL = center.x - blockW / 2;
+            const startT = center.y - blockH / 2;
+            const leftCol = startL;
+            const rightCol = startL + blockW - (w * 0.30);
+
+            for (let i = 0; i < topCount; i++) coords.push({ l: startL + (i * (w + gapX)), t: startT, id: `${prefix}-${coords.length + 1}` });
+            for (let i = 0; i < sideCount; i++) coords.push({ l: rightCol, t: startT + h + gapY + (i * (h + gapY)), id: `${prefix}-${coords.length + 1}`, vertical: true });
+            for (let i = 0; i < bottomCount; i++) coords.push({ l: startL + ((bottomCount - 1 - i) * (w + gapX)), t: startT + blockH - h, id: `${prefix}-${coords.length + 1}` });
+            for (let i = 0; i < sideCount; i++) coords.push({ l: leftCol, t: startT + blockH - h - gapY - ((i + 1) * (h + gapY)), id: `${prefix}-${coords.length + 1}`, vertical: true });
+        }
+
+        const newEls = coords.map(c => {
+            const mesa = document.createElement('div');
+            mesa.className = 'mesa';
+            mesa.setAttribute('data-info', c.id);
+            mesa.textContent = labelForMesa(c.id);
+            mesa.style.left = c.l.toFixed(4) + '%';
+            mesa.style.top = c.t.toFixed(4) + '%';
+            mesa.style.width = (c.vertical ? 0.36 : w).toFixed(4) + '%';
+            mesa.style.height = (c.vertical ? 1.64 : h).toFixed(4) + '%';
+            addMesaEvents(mesa);
+            capaMesas.appendChild(mesa);
+            return mesa;
+        });
+        refreshGroupPicker();
+        if (count === 1) selectMesa(newEls[0]); else selectGroup(prefix);
+    }
+
+    document.addEventListener('keydown', e => {
+        if (document.activeElement && ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) return;
+        if (e.key === 'Escape') return clearSelection();
+        if (!selectedType) return;
+        if (e.key.startsWith('Arrow')) {
+            e.preventDefault();
+            const step = e.altKey ? 0.5 : (e.shiftKey ? 0.05 : 0.005);
+            if (e.key === 'ArrowUp') moveSelectionBy(0, -step);
+            if (e.key === 'ArrowDown') moveSelectionBy(0, step);
+            if (e.key === 'ArrowLeft') moveSelectionBy(-step, 0);
+            if (e.key === 'ArrowRight') moveSelectionBy(step, 0);
+        }
+        if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+    });
+
+    function handleWheel(e) {
+        e.preventDefault();
+        const before = mouseToMapPct(e);
+        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+        const newScale = scale * delta;
+        if (newScale < 0.05 || newScale > 15) return;
+        scale = newScale;
+        container.style.transform = `scale(${scale})`;
+        // El scroll zoom-to-pointer aproximado conserva la zona de trabajo.
+        const mapX = (before.x / 100) * mapImg.naturalWidth * scale;
+        const mapY = (before.y / 100) * mapImg.naturalHeight * scale;
+        viewport.scrollLeft = mapX - (e.clientX - viewport.getBoundingClientRect().left);
+        viewport.scrollTop = mapY - (e.clientY - viewport.getBoundingClientRect().top);
+    }
+
+    function fit() {
+        const imgWidth = mapImg.naturalWidth || 4000;
+        scale = (window.innerWidth / imgWidth) * 0.9;
+        container.style.transform = `scale(${scale})`;
+    }
+
+    function exportLines() {
+        const mesas = getMesas().sort(sortById);
+        return mesas.map(m => {
+            const id = m.getAttribute('data-info');
+            const l = pctNum(m.style.left).toFixed(4);
+            const t = pctNum(m.style.top).toFixed(4);
+            const w = pctNum(m.style.width).toFixed(4);
+            const h = pctNum(m.style.height).toFixed(4);
+            return `<div class="mesa" data-info="${id}" style="left: ${l}%; top: ${t}%; width: ${w}%; height: ${h}%;"></div>`;
+        }).join('\n') + '\n';
+    }
+
+    function exportHTML(copyOnly) {
+        const html = exportLines();
+        if (!html.trim()) return alert('No hay mesas para exportar.');
+        const area = document.getElementById('clipboard-area');
+        area.value = html;
+        area.select();
+        document.execCommand('copy');
+        if (copyOnly) {
+            alert(`Copiado al portapapeles: ${getMesas().length} mesas.`);
+            return;
+        }
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'mesas.html';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        alert(`Descargado mesas.html y copiado al portapapeles: ${getMesas().length} mesas.`);
+    }
+</script>
+</body>
+</html>
