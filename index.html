@@ -10,6 +10,7 @@
         --verde-base: #2ecc71;
         --verde-deep: #27ae60;
         --rojo-sold: #e74c3c;
+        --morado-vip: #9b59b6;
         --text-gray: #95a5a6;
         --fuente: 'Inter', sans-serif;
         --map-scale: 1; 
@@ -33,6 +34,9 @@
     }
 
     #map-img { display: block; image-rendering: high-quality; max-width: none; user-select: none; -webkit-user-drag: none; }
+
+    /* LAYERS */
+    #capa-sponsors { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
 
     body.is-state-1 #container, body.is-state-2 #container { cursor: grab; }
     body.is-state-1 #container:active, body.is-state-2 #container:active { cursor: grabbing; }
@@ -88,6 +92,44 @@
     .mesa.agotada .tooltip-footer { background: var(--rojo-sold); }
     .mesa.commercial .tooltip-footer { background: #3498db; }
 
+    /* --- SPONSORS / SELLERS --- */
+    .sponsor-zone { position: absolute; pointer-events: none; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    body.is-state-1 .sponsor-zone, body.is-state-2 .sponsor-zone { pointer-events: auto; }
+
+    .sponsor-zone:hover { transform: scale(1.08); z-index: 9000; }
+    .sponsor-logo-box { 
+        width: 100%; height: 100%; background: white; border-radius: 8px; 
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; 
+        padding: 5px; box-sizing: border-box; border: 2px solid white; transition: border-color 0.2s;
+    }
+    .sponsor-zone:hover .sponsor-logo-box { border-color: var(--morado-vip); }
+    .sponsor-logo-box img { width: 100%; height: 100%; object-fit: contain; }
+
+    .sponsor-logo-box.dual-layout { flex-direction: column; justify-content: space-around; }
+    .sponsor-logo-box.dual-layout img { height: 45%; width: 100%; }
+
+    .sponsor-tooltip {
+        position: absolute; bottom: 100%; left: 50%; margin-bottom: 15px; 
+        transform: translateX(-50%) translateY(10px) scale(calc(1 / var(--map-scale)));
+        transform-origin: bottom center; background: white; border-radius: 14px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.3); padding: 18px; width: max-content; min-width: 200px;
+        opacity: 0; pointer-events: none; transition: all 0.25s ease; border-top: 5px solid var(--morado-vip);
+    }
+    .sponsor-tooltip::after { content: ''; position: absolute; top: 100%; left: -30px; right: -30px; height: 50px; }
+    .sponsor-zone:hover .sponsor-tooltip { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0) scale(calc(1 / var(--map-scale))); }
+
+    .sp-name { font-size: 18px; font-weight: 800; color: #1f2937; margin-bottom: 14px; letter-spacing: -0.02em; }
+    .sp-links { display: flex; flex-direction: column; gap: 8px; }
+    .sp-btn {
+        display: flex; align-items: center; justify-content: center; gap: 10px;
+        padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 700;
+        transition: all 0.2s;
+    }
+    .sp-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .btn-ig { background: #fdf2f8; color: #e1306c; border: 1px solid #fbcfe8; }
+    .btn-web { background: #f8fafc; color: #334155; border: 1px solid #e2e8f0; }
+    .sp-icon { width: 18px; height: 18px; object-fit: contain; }
+
     /* --- MENÚ LATERAL (BACK) --- */
     #side-menu {
         position: fixed; right: -150px; bottom: 100px; 
@@ -129,7 +171,7 @@
     }
     #loupe.visible { opacity: 1; display: block; }
     #loupe-inner { position: absolute; transform-origin: 0 0; pointer-events: none; will-change: transform; }
-    #loupe .custom-tooltip-wrapper { display: none !important; }
+    #loupe .custom-tooltip-wrapper, #loupe .sponsor-tooltip { display: none !important; }
 
     @media(max-width: 768px) {
         #side-menu { display: none; } 
@@ -145,6 +187,7 @@
         <div id="container">
             <img id="map-img" src="Hall 2.png" alt="Map Hall 2">
             <div id="capa-mesas"></div> 
+            <div id="capa-sponsors"></div>
         </div>
     </div>
 
@@ -172,6 +215,8 @@
 <script>
     const diccionarioMesas = new Map();
     const URL_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuA_zpd7Ays5Xt9MDPQzkzCbxj8s0SaDgQGhuxcthtMl59F3H9oWipgKfsUmbiDloop2b43rqoq8CG/pub?gid=0&single=true&output=csv';
+    const IG_ICON = "https://cdn.shopify.com/s/files/1/0772/3633/9020/files/Instagram_icon_a7c6e898-1b4b-42cf-a525-04f05aea43a2.png?v=1778103647";
+    const WEB_ICON = `<svg class="sp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`;
 
     async function cargarMesas() {
         try {
@@ -231,6 +276,44 @@
             document.getElementById('loupe-inner').innerHTML = document.getElementById('container').innerHTML;
 
         } catch (e) { console.error("Error cargando mesas:", e); }
+    }
+
+
+    async function cargarSponsors() {
+        try {
+            const respHTML = await fetch('seller.html?v=' + new Date().getTime());
+            if (!respHTML.ok) return;
+            const html = await respHTML.text();
+            document.getElementById('capa-sponsors').innerHTML = html;
+
+            document.querySelectorAll('#capa-sponsors .sponsor-zone').forEach(sp => {
+                const name = sp.getAttribute('data-name') || "Sponsor";
+                const logo = sp.getAttribute('data-logo') || "";
+                const ig = sp.getAttribute('data-ig') || "";
+                const web = sp.getAttribute('data-web') || "";
+
+                const isDual = sp.getAttribute('data-dual') === 'true';
+                const boxClass = isDual ? "sponsor-logo-box dual-layout" : "sponsor-logo-box";
+
+                const logoHTML = isDual 
+                    ? `<img src="${logo}" alt="${name}"><img src="${logo}" alt="${name}">`
+                    : `<img src="${logo}" alt="${name}">`;
+
+                sp.innerHTML = `
+                    <div class="${boxClass}">
+                        ${logo ? logoHTML : `<span style="color:#333; font-size:10px; font-weight:800;">${name}</span>`}
+                    </div>
+                    <div class="sponsor-tooltip">
+                        <div class="sp-name">${name}</div>
+                        <div class="sp-links">
+                            ${ig ? `<a href="${ig}" target="_blank" class="sp-btn btn-ig"><img src="${IG_ICON}" class="sp-icon"> Instagram</a>` : ''}
+                            ${web ? `<a href="${web}" target="_blank" class="sp-btn btn-web">${WEB_ICON} Visit Website</a>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('loupe-inner').innerHTML = document.getElementById('container').innerHTML;
+        } catch (e) { console.error("Error cargando sponsors:", e); }
     }
 
     async function sincronizarConExcel() {
@@ -294,7 +377,7 @@
     window.onload = () => {
         if(mapImg.complete) initMapPosition();
         else mapImg.onload = initMapPosition;
-        cargarMesas();
+        cargarMesas(); cargarSponsors();
     };
 
     window.addEventListener('resize', () => {
@@ -330,7 +413,7 @@
             
             document.getElementById('side-menu').classList.remove('visible');
             
-            document.querySelectorAll('.custom-tooltip-wrapper').forEach(t => {
+            document.querySelectorAll('.custom-tooltip-wrapper, .sponsor-tooltip').forEach(t => {
                 t.style.opacity = '0'; t.style.pointerEvents = 'none';
                 setTimeout(() => { t.style.opacity = ''; t.style.pointerEvents = ''; }, 300);
             });
@@ -362,7 +445,7 @@
     }
 
     container.addEventListener('click', (e) => {
-        if (isDragging) return; 
+        if (e.target.closest('a') || e.target.closest('.sponsor-zone') || isDragging) return; 
         document.getElementById('loupe').classList.remove('visible');
 
         let nextState = currentZoomState + 1;
@@ -400,12 +483,12 @@
         container.style.transition = 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)'; 
     }
 
-    container.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+    container.addEventListener('mousedown', (e) => { if (e.target.closest('.sponsor-tooltip')) return; startDrag(e.clientX, e.clientY); });
     window.addEventListener('mousemove', (e) => doDrag(e.clientX, e.clientY));
     window.addEventListener('mouseup', endDrag);
     window.addEventListener('mouseleave', endDrag);
 
-    container.addEventListener('touchstart', (e) => startDrag(e.touches[0].clientX, e.touches[0].clientY));
+    container.addEventListener('touchstart', (e) => { if (e.target.closest('.sponsor-tooltip')) return; startDrag(e.touches[0].clientX, e.touches[0].clientY); });
     window.addEventListener('touchmove', (e) => {
         if (currentZoomState > 0) e.preventDefault(); 
         doDrag(e.touches[0].clientX, e.touches[0].clientY);
@@ -421,7 +504,7 @@
     const loupeMultiplier = 1.6; 
     
     window.addEventListener('pointermove', (e) => {
-        if (window.innerWidth < 768 || e.pointerType === 'touch' || currentZoomState > 0 || isDragging) {
+        if (e.target.closest('.sponsor-zone') || window.innerWidth < 768 || e.pointerType === 'touch' || currentZoomState > 0 || isDragging) {
             loupe.classList.remove('visible');
             return;
         }
@@ -450,7 +533,7 @@
         loupeInner.style.transform = `translate(${tx}px, ${ty}px) scale(${targetZoom})`;
     });
 
-    setInterval(sincronizarConExcel, 120000); 
+    setInterval(() => { sincronizarConExcel(); cargarSponsors(); }, 120000); 
 
 </script>
 </body>
