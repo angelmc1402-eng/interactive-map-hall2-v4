@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>HALL 2 - Ultimate Precision Map V10</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-
 <style>
     :root {
         --verde-base: #2ecc71;
@@ -16,27 +15,16 @@
         --map-scale: 1; 
     }
 
-    body, html {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background: #e5e7eb;
-        font-family: var(--fuente);
-    }
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #e5e7eb; font-family: var(--fuente); }
     
     #map-wrapper { 
-        width: 100vw;
-        height: 100vh; 
-        position: relative;
-        overflow: hidden;
+        width: 100vw; height: 100vh; 
+        position: relative; overflow: hidden;
     }
 
     #container { 
         position: absolute; 
-        top: 0;
-        left: 0;
+        top: 0; left: 0;
         transform-origin: 0 0; 
         transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); 
         cursor: crosshair; 
@@ -44,43 +32,10 @@
         display: inline-block;
     }
 
-    #map-img {
-        display: block;
-        image-rendering: high-quality;
-        max-width: none;
-        user-select: none;
-        -webkit-user-drag: none;
-        position: relative;
-        z-index: 1;
-    }
+    #map-img { display: block; image-rendering: high-quality; max-width: none; user-select: none; -webkit-user-drag: none; }
 
-    body.is-state-1 #container,
-    body.is-state-2 #container {
-        cursor: grab;
-    }
-
-    body.is-state-1 #container:active,
-    body.is-state-2 #container:active {
-        cursor: grabbing;
-    }
-
-    /* --- CAPAS DEL MAPA --- */
-    #capa-mesas,
-    #capa-sponsors {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-    }
-
-    #capa-mesas {
-        z-index: 10;
-    }
-
-    #capa-sponsors {
-        pointer-events: none;
-        z-index: 30;
-    }
+    body.is-state-1 #container, body.is-state-2 #container { cursor: grab; }
+    body.is-state-1 #container:active, body.is-state-2 #container:active { cursor: grabbing; }
 
     /* --- MESAS --- */
     .mesa { 
@@ -92,340 +47,104 @@
         pointer-events: none; 
     }
     
-    body.is-state-1 .mesa,
-    body.is-state-2 .mesa {
-        pointer-events: auto;
-        cursor: pointer;
-    }
+    body.is-state-1 .mesa, body.is-state-2 .mesa { pointer-events: auto; cursor: pointer; }
     
-    .mesa.commercial {
-        border-color: #3498db;
-        background: rgba(52, 152, 219, 0.3);
-    }
+    .mesa.commercial { border-color: #3498db; background: rgba(52, 152, 219, 0.3); }
+    .mesa.agotada { background: rgba(231, 76, 60, 0.4) !important; border-color: var(--rojo-sold) !important; cursor: not-allowed; }
 
-    .mesa.agotada {
-        background: rgba(231, 76, 60, 0.4) !important;
-        border-color: var(--rojo-sold) !important;
-        cursor: not-allowed;
+    body.is-state-1 .mesa:hover, body.is-state-1 .mesa:active,
+    body.is-state-2 .mesa:hover, body.is-state-2 .mesa:active { 
+        z-index: 999; border-color: white; 
+        box-shadow: 0 0 20px rgba(0,0,0,0.5); background: rgba(46, 204, 113, 0.7);
     }
-
-    body.is-state-1 .mesa:hover,
-    body.is-state-1 .mesa:active,
-    body.is-state-2 .mesa:hover,
-    body.is-state-2 .mesa:active { 
-        z-index: 999;
-        border-color: white; 
-        box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        background: rgba(46, 204, 113, 0.7);
-    }
-
-    body.is-state-1 .mesa.commercial:hover,
-    body.is-state-2 .mesa.commercial:hover {
-        background: rgba(52, 152, 219, 0.7);
-    }
-
-    /* --- SPONSORS / LOGOS --- */
-    .sponsor-zone {
-        position: absolute;
-        box-sizing: border-box;
-        border-radius: 4px;
-        overflow: hidden;
-        pointer-events: auto;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        z-index: 30;
-    }
-
-    .sponsor-zone:hover {
-        z-index: 999;
-        filter: drop-shadow(0 0 10px rgba(0,0,0,0.35));
-    }
-
-    .sponsor-content {
-        width: 100%;
-        height: 100%;
-        padding: 3px;
-        box-sizing: border-box;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        position: relative;
-    }
-
-    .sponsor-logo {
-        max-width: 100%;
-        max-height: 100%;
-        width: auto;
-        height: auto;
-        object-fit: contain;
-        display: block;
-        pointer-events: none;
-        user-select: none;
-    }
-
-    .sponsor-name {
-        font-size: 9px;
-        font-weight: 800;
-        color: #1f2937;
-        line-height: 1;
-        text-align: center;
-        background: rgba(255,255,255,0.85);
-        padding: 2px 4px;
-        border-radius: 3px;
-    }
-
-    .sponsor-zone.has-logo .sponsor-name {
-        display: none;
-    }
-
-    .dual-badge {
-        display: none;
-        position: absolute;
-        right: 2px;
-        bottom: 2px;
-        background: #9b59b6;
-        color: white;
-        font-size: 7px;
-        font-weight: 900;
-        padding: 1px 3px;
-        border-radius: 3px;
-        line-height: 1;
-    }
-
-    .sponsor-zone[data-dual="true"] .dual-badge {
-        display: block;
-    }
+    body.is-state-1 .mesa.commercial:hover, body.is-state-2 .mesa.commercial:hover { background: rgba(52, 152, 219, 0.7); }
 
     /* --- TOOLTIPS (3 COLUMNAS) --- */
     .custom-tooltip-wrapper {
-        position: absolute;
-        bottom: 150%;
-        left: 50%;
+        position: absolute; bottom: 150%; left: 50%;
         transform: translateX(-50%) translateY(10px) scale(calc(1 / var(--map-scale)));
         transform-origin: bottom center;
         width: 360px; 
-        background: white;
-        border-radius: 12px;
+        background: white; border-radius: 12px;
         box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.2s ease, transform 0.2s ease;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
+        opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
+        overflow: hidden; display: flex; flex-direction: column;
         z-index: 1000; 
     }
 
-    body.is-state-1 .mesa:hover .custom-tooltip-wrapper,
-    body.is-state-1 .mesa:active .custom-tooltip-wrapper,
-    body.is-state-2 .mesa:hover .custom-tooltip-wrapper,
-    body.is-state-2 .mesa:active .custom-tooltip-wrapper { 
-        opacity: 1;
-        transform: translateX(-50%) translateY(0) scale(calc(1 / var(--map-scale)));
-        pointer-events: auto;
+    body.is-state-1 .mesa:hover .custom-tooltip-wrapper, body.is-state-1 .mesa:active .custom-tooltip-wrapper,
+    body.is-state-2 .mesa:hover .custom-tooltip-wrapper, body.is-state-2 .mesa:active .custom-tooltip-wrapper { 
+        opacity: 1; transform: translateX(-50%) translateY(0) scale(calc(1 / var(--map-scale))); pointer-events: auto;
     }
 
-    .tooltip-row {
-        display: flex;
-        border-bottom: 1px solid #edf2f7;
-    }
-
-    .tooltip-cell {
-        flex: 1;
-        padding: 12px 5px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .tooltip-cell:not(:last-child) {
-        border-right: 1px solid #edf2f7;
-    } 
+    .tooltip-row { display: flex; border-bottom: 1px solid #edf2f7; }
+    .tooltip-cell { flex: 1; padding: 12px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .tooltip-cell:not(:last-child) { border-right: 1px solid #edf2f7; } 
     
-    .tooltip-label {
-        color: var(--text-gray);
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        margin-bottom: 4px;
-        letter-spacing: 0.5px;
-    }
-
-    .tooltip-value {
-        font-size: 15px;
-        font-weight: 800;
-        color: #1f2937;
-        text-align: center;
-        line-height: 1.1;
-    }
+    .tooltip-label { color: var(--text-gray); font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;}
+    .tooltip-value { font-size: 15px; font-weight: 800; color: #1f2937; text-align: center; line-height: 1.1;}
     
-    .tooltip-footer {
-        padding: 14px;
-        font-size: 15px;
-        font-weight: 800;
-        color: white;
-        background: var(--verde-deep);
-        text-align: center;
-    }
-
-    .mesa.agotada .tooltip-footer {
-        background: var(--rojo-sold);
-    }
-
-    .mesa.commercial .tooltip-footer {
-        background: #3498db;
-    }
+    .tooltip-footer { padding: 14px; font-size: 15px; font-weight: 800; color: white; background: var(--verde-deep); text-align: center; }
+    .mesa.agotada .tooltip-footer { background: var(--rojo-sold); }
+    .mesa.commercial .tooltip-footer { background: #3498db; }
 
     /* --- MENÚ LATERAL (BACK) --- */
     #side-menu {
-        position: fixed;
-        right: -150px;
-        bottom: 100px; 
+        position: fixed; right: -150px; bottom: 100px; 
         transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-        z-index: 20000;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
+        z-index: 20000; display: flex; flex-direction: column; gap: 10px;
     }
-
-    #side-menu.visible {
-        right: 30px;
-    } 
+    #side-menu.visible { right: 30px; } 
 
     .btn-back {
-        background: white;
-        border: none;
-        padding: 12px 20px;
-        border-radius: 50px;
-        font-family: var(--fuente);
-        font-weight: 800;
-        font-size: 13px;
-        color: #1f2937;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        transition: all 0.2s;
+        background: white; border: none; padding: 12px 20px; border-radius: 50px;
+        font-family: var(--fuente); font-weight: 800; font-size: 13px; color: #1f2937;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15); cursor: pointer;
+        display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;
     }
-
-    .btn-back:hover {
-        transform: scale(1.05);
-        background: #f8fafc;
-        color: var(--verde-deep);
-    }
+    .btn-back:hover { transform: scale(1.05); background: #f8fafc; color: var(--verde-deep); }
 
     /* --- SELECTOR RÁPIDO DE ZOOM --- */
     #zoom-ui {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        background: white;
-        padding: 6px;
-        border-radius: 50px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-        z-index: 20000;
-        display: flex;
-        gap: 5px;
+        position: fixed; bottom: 30px; right: 30px;
+        background: white; padding: 6px; border-radius: 50px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 20000;
+        display: flex; gap: 5px;
     }
-
     .zoom-btn {
-        width: 45px;
-        height: 45px;
-        border-radius: 50%;
-        border: none;
-        background: transparent;
-        font-weight: 800;
-        font-family: var(--fuente);
-        color: var(--text-gray);
-        cursor: pointer;
-        transition: all 0.2s;
-        font-size: 14px;
+        width: 45px; height: 45px; border-radius: 50%; border: none;
+        background: transparent; font-weight: 800; font-family: var(--fuente); color: var(--text-gray);
+        cursor: pointer; transition: all 0.2s; font-size: 14px;
     }
-
-    .zoom-btn:hover {
-        background: #f1f5f9;
-        color: #1f2937;
-    }
-
-    .zoom-btn.active {
-        background: #1f2937;
-        color: white;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    }
+    .zoom-btn:hover { background: #f1f5f9; color: #1f2937; }
+    .zoom-btn.active { background: #1f2937; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
 
     /* --- LA LUPA MÁGICA --- */
     #loupe {
-        position: fixed;
-        width: 260px;
-        height: 260px;
-        border-radius: 50%;
-        border: 4px solid white;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.4), inset 0 0 15px rgba(0,0,0,0.2);
-        pointer-events: none;
-        overflow: hidden;
-        z-index: 15000; 
-        opacity: 0;
-        display: none;
-        background: #fff;
-        left: 0;
-        top: 0;
-        will-change: transform;
+        position: fixed; width: 260px; height: 260px; border-radius: 50%;
+        border: 4px solid white; box-shadow: 0 15px 35px rgba(0,0,0,0.4), inset 0 0 15px rgba(0,0,0,0.2);
+        pointer-events: none; overflow: hidden; z-index: 15000; 
+        opacity: 0; display: none; background: #fff;
+        left: 0; top: 0; will-change: transform;
     }
-
-    #loupe.visible {
-        opacity: 1;
-        display: block;
-    }
-
-    #loupe-inner {
-        position: absolute;
-        transform-origin: 0 0;
-        pointer-events: none;
-        will-change: transform;
-    }
-
-    #loupe .custom-tooltip-wrapper {
-        display: none !important;
-    }
+    #loupe.visible { opacity: 1; display: block; }
+    #loupe-inner { position: absolute; transform-origin: 0 0; pointer-events: none; will-change: transform; }
+    #loupe .custom-tooltip-wrapper { display: none !important; }
 
     @media(max-width: 768px) {
-        #side-menu {
-            display: none;
-        } 
-
-        #zoom-ui {
-            right: 50%;
-            transform: translateX(50%);
-            bottom: 25px;
-        }
-
-        .custom-tooltip-wrapper {
-            width: 340px;
-        }
-
-        #loupe {
-            display: none !important;
-        } 
+        #side-menu { display: none; } 
+        #zoom-ui { right: 50%; transform: translateX(50%); bottom: 25px; }
+        .custom-tooltip-wrapper { width: 340px; }
+        #loupe { display: none !important; } 
     }
 </style>
 </head>
-
 <body class="is-state-0">
 
     <div id="map-wrapper">
         <div id="container">
             <img id="map-img" src="Hall 2.png" alt="Map Hall 2">
-            <div id="capa-mesas"></div>
-            <div id="capa-sponsors"></div>
+            <div id="capa-mesas"></div> 
         </div>
     </div>
 
@@ -452,95 +171,15 @@
 
 <script>
     const diccionarioMesas = new Map();
-
     const URL_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuA_zpd7Ays5Xt9MDPQzkzCbxj8s0SaDgQGhuxcthtMl59F3H9oWipgKfsUmbiDloop2b43rqoq8CG/pub?gid=0&single=true&output=csv';
-
-    function escapeHTML(str = '') {
-        return String(str).replace(/[&<>"']/g, m => ({
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        }[m]));
-    }
-
-    function actualizarLupa() {
-        const loupeInner = document.getElementById('loupe-inner');
-        const containerHTML = document.getElementById('container').innerHTML;
-
-        if (loupeInner) {
-            loupeInner.innerHTML = containerHTML;
-        }
-    }
-
-    function renderSponsorZone(sp) {
-        const name = sp.getAttribute('data-name') || 'Sponsor';
-        const logo = sp.getAttribute('data-logo') || '';
-        const ig = sp.getAttribute('data-ig') || '';
-        const web = sp.getAttribute('data-web') || '';
-
-        sp.classList.remove('selected');
-        sp.classList.toggle('has-logo', logo.trim() !== '');
-
-        sp.innerHTML = `
-            <div class="sponsor-content">
-                ${logo ? `<img class="sponsor-logo" src="${escapeHTML(logo)}" alt="${escapeHTML(name)}" onerror="this.style.display='none'">` : ''}
-                <span class="sponsor-name">${escapeHTML(name)}</span>
-                <span class="dual-badge">DUAL</span>
-            </div>
-        `;
-
-        sp.onclick = function(e) {
-            e.stopPropagation();
-
-            const link = web || ig;
-
-            if (link && link.trim() !== '') {
-                window.open(link, '_blank');
-            }
-        };
-    }
-
-    async function cargarSponsors() {
-        try {
-            const respHTML = await fetch('seller.html?v=' + new Date().getTime());
-
-            if (!respHTML.ok) {
-                throw new Error('seller.html no encontrado');
-            }
-
-            const html = await respHTML.text();
-
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
-
-            const sponsors = tempDiv.querySelectorAll('.sponsor-zone');
-            const capaSponsors = document.getElementById('capa-sponsors');
-
-            capaSponsors.innerHTML = '';
-
-            sponsors.forEach(sp => {
-                renderSponsorZone(sp);
-                capaSponsors.appendChild(sp);
-            });
-
-            actualizarLupa();
-
-        } catch (e) {
-            console.warn('No se han cargado sponsors:', e);
-        }
-    }
 
     async function cargarMesas() {
         try {
             const respHTML = await fetch('mesas.html?v=' + new Date().getTime());
             const html = await respHTML.text();
-
             document.getElementById('capa-mesas').innerHTML = html;
             
-            const mesas = document.querySelectorAll('#capa-mesas .mesa');
-
+            const mesas = document.querySelectorAll('.mesa');
             mesas.forEach(m => {
                 const info = m.getAttribute('data-info') || ""; 
                 diccionarioMesas.set(info, m); 
@@ -552,12 +191,12 @@
                 let tableNum = parts.length >= 3 ? parts[2] : (parts[1] || "0"); 
 
                 if (info.includes("FIGURES")) {
-                    catName = "Figures & Dolls";
-                } else if (info.includes("RETRO")) {
-                    catName = "Retro & Fashion";
-                    zoneName = "-";
-                    tableNum = parts[1]; 
-                }
+    catName = "Figures & Dolls";
+} else if (info.includes("RETRO")) {
+    catName = "Retro & Fashion";
+    zoneName = "-";
+    tableNum = parts[1]; 
+}
 
                 let type = "Collector Table";
                 let price = "100,00 €";
@@ -589,13 +228,9 @@
             });
             
             await sincronizarConExcel();
-            await cargarSponsors();
+            document.getElementById('loupe-inner').innerHTML = document.getElementById('container').innerHTML;
 
-            actualizarLupa();
-
-        } catch (e) {
-            console.error("Error cargando mesas:", e);
-        }
+        } catch (e) { console.error("Error cargando mesas:", e); }
     }
 
     async function sincronizarConExcel() {
@@ -606,9 +241,7 @@
 
             filas.forEach((fila, index) => {
                 if (index === 0 || !fila.trim()) return;
-
                 const col = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-
                 if (col.length >= 3) {
                     const estado = col[1].replace(/["']/g, "").trim().toUpperCase(); 
                     const idMesa = col[2].replace(/["']/g, "").trim(); 
@@ -617,45 +250,20 @@
                     if (mesaDiv) {
                         if (estado.includes("VENDIDA") || estado.includes("SOLD")) {
                             mesaDiv.classList.add('agotada');
-
-                            const footer = mesaDiv.querySelector('.tooltip-footer');
-
-                            if (footer) {
-                                footer.innerText = "SOLD OUT";
-                            }
+                            mesaDiv.querySelector('.tooltip-footer').innerText = "SOLD OUT";
                         } else {
                             mesaDiv.classList.remove('agotada');
-
-                            const footer = mesaDiv.querySelector('.tooltip-footer');
-
-                            if (footer && footer.innerText === "SOLD OUT") {
-                                const info = mesaDiv.getAttribute('data-info') || "";
-                                let type = "Collector Table";
-                                let price = "100,00 €";
-
-                                if (/DIECAST-(F|G|H)/.test(info) || /FIGURES-(C|D)/.test(info)) {
-                                    type = "Commercial Table";
-                                    price = "250,00 €";
-                                }
-
-                                footer.innerText = `${type}  •  ${price}`;
-                            }
                         }
                     }
                 }
             });
-
-            actualizarLupa();
-
-        } catch (err) {
-            console.error("Error sincronizando:", err);
-        }
+            document.getElementById('loupe-inner').innerHTML = document.getElementById('container').innerHTML;
+        } catch (err) { console.error("Error sincronizando:", err); }
     }
 
     // ==========================================
     // MOTOR DE TRIPLE ZOOM & NAVEGACIÓN
     // ==========================================
-
     const container = document.getElementById('container');
     const mapImg = document.getElementById('map-img');
     
@@ -663,16 +271,12 @@
     let baseScale = 1; 
     let currentScale = 1;
     
-    let currentX = 0;
-    let currentY = 0;
+    let currentX = 0, currentY = 0;
     let isDragging = false;
-    let startX;
-    let startY;
-    let initialX;
-    let initialY;
+    let startX, startY, initialX, initialY;
 
     function initMapPosition() {
-        if (mapImg.naturalWidth === 0) {
+        if(mapImg.naturalWidth === 0) {
             setTimeout(initMapPosition, 100);
             return;
         }
@@ -682,27 +286,19 @@
         
         baseScale = Math.min(scaleX, scaleY) * 0.98;
         
-        if (baseScale > 1) {
-            baseScale = 1;
-        }
+        if (baseScale > 1) baseScale = 1;
 
         setZoomState(0, null, null, true); 
     }
 
     window.onload = () => {
-        if (mapImg.complete) {
-            initMapPosition();
-        } else {
-            mapImg.onload = initMapPosition;
-        }
-
+        if(mapImg.complete) initMapPosition();
+        else mapImg.onload = initMapPosition;
         cargarMesas();
     };
 
     window.addEventListener('resize', () => {
-        if (currentZoomState === 0) {
-            initMapPosition();
-        }
+        if(currentZoomState === 0) initMapPosition();
     });
 
     function setZoomState(state, clickClientX = null, clickClientY = null, instant = false) {
@@ -710,13 +306,9 @@
         
         let zoomMultiplier = 1;
         
-        if (state === 1) {
-            zoomMultiplier = window.innerWidth < 768 ? 3.0 : 2.5; 
-        }
-
-        if (state === 2) {
-            zoomMultiplier = window.innerWidth < 768 ? 7.0 : 6.0;
-        }
+        // --- AQUÍ ESTÁ EL CAMBIO PARA MÓVIL (MUCHO MÁS SUAVE Y ABARCABLE) ---
+        if (state === 1) zoomMultiplier = window.innerWidth < 768 ? 3.0 : 2.5; 
+        if (state === 2) zoomMultiplier = window.innerWidth < 768 ? 7.0 : 6.0;
 
         let newScale = baseScale * zoomMultiplier;
 
@@ -725,7 +317,6 @@
         document.querySelectorAll('.zoom-btn').forEach((btn, idx) => {
             btn.classList.toggle('active', idx === state);
         });
-
         document.body.className = 'is-state-' + state;
 
         container.style.transition = instant ? 'none' : 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
@@ -740,13 +331,8 @@
             document.getElementById('side-menu').classList.remove('visible');
             
             document.querySelectorAll('.custom-tooltip-wrapper').forEach(t => {
-                t.style.opacity = '0';
-                t.style.pointerEvents = 'none';
-
-                setTimeout(() => {
-                    t.style.opacity = '';
-                    t.style.pointerEvents = '';
-                }, 300);
+                t.style.opacity = '0'; t.style.pointerEvents = 'none';
+                setTimeout(() => { t.style.opacity = ''; t.style.pointerEvents = ''; }, 300);
             });
         } else {
             document.getElementById('side-menu').classList.add('visible');
@@ -777,31 +363,22 @@
 
     container.addEventListener('click', (e) => {
         if (isDragging) return; 
-
         document.getElementById('loupe').classList.remove('visible');
 
         let nextState = currentZoomState + 1;
-
-        if (nextState > 2) {
-            nextState = 0; 
-        }
+        if (nextState > 2) nextState = 0; 
 
         setZoomState(nextState, e.clientX, e.clientY);
     });
 
     window.setZoomStateUI = function(state, event) {
-        if (event) {
-            event.stopPropagation();
-        } 
-
+        if (event) event.stopPropagation(); 
         document.getElementById('loupe').classList.remove('visible');
-
         setZoomState(state, null, null);
     };
 
     function startDrag(clientX, clientY) {
         if (currentZoomState === 0) return; 
-
         isDragging = true;
         startX = clientX;
         startY = clientY;
@@ -812,50 +389,32 @@
 
     function doDrag(clientX, clientY) {
         if (!isDragging) return;
-
         currentX = initialX + (clientX - startX);
         currentY = initialY + (clientY - startY);
-
         container.style.transform = `translate(${currentX}px, ${currentY}px) scale(${currentScale})`;
     }
 
     function endDrag() {
         if (!isDragging) return;
-
         setTimeout(() => isDragging = false, 50); 
-
         container.style.transition = 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)'; 
     }
 
-    container.addEventListener('mousedown', (e) => {
-        startDrag(e.clientX, e.clientY);
-    });
-
-    window.addEventListener('mousemove', (e) => {
-        doDrag(e.clientX, e.clientY);
-    });
-
+    container.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+    window.addEventListener('mousemove', (e) => doDrag(e.clientX, e.clientY));
     window.addEventListener('mouseup', endDrag);
     window.addEventListener('mouseleave', endDrag);
 
-    container.addEventListener('touchstart', (e) => {
-        startDrag(e.touches[0].clientX, e.touches[0].clientY);
-    });
-
+    container.addEventListener('touchstart', (e) => startDrag(e.touches[0].clientX, e.touches[0].clientY));
     window.addEventListener('touchmove', (e) => {
-        if (currentZoomState > 0) {
-            e.preventDefault();
-        } 
-
+        if (currentZoomState > 0) e.preventDefault(); 
         doDrag(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: false });
-
     window.addEventListener('touchend', endDrag);
 
     // ==========================================
     // LA LUPA MÁGICA
     // ==========================================
-
     const loupe = document.getElementById('loupe');
     const loupeInner = document.getElementById('loupe-inner');
     const loupeSize = 260; 
@@ -875,7 +434,6 @@
         }
 
         loupe.classList.add('visible');
-
         loupe.style.transform = `translate(${e.clientX - loupeSize / 2}px, ${e.clientY - loupeSize / 2}px)`;
 
         loupeInner.style.width = mapImg.naturalWidth + 'px';
@@ -892,12 +450,8 @@
         loupeInner.style.transform = `translate(${tx}px, ${ty}px) scale(${targetZoom})`;
     });
 
-    setInterval(async () => {
-        await sincronizarConExcel();
-        await cargarSponsors();
-        actualizarLupa();
-    }, 120000); 
-</script>
+    setInterval(sincronizarConExcel, 120000); 
 
+</script>
 </body>
 </html>
