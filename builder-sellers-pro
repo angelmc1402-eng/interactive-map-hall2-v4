@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HALL 1 - Ultimate Sponsor Builder</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --oro-base: #f1c40f;
+        --morado-vip: #9b59b6;
+        --dark-bg: #1e272e;
+        --panel-bg: #ffffff;
+        --fuente: 'Inter', sans-serif;
+    }
+
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--dark-bg); font-family: var(--fuente); }
+    
+    #viewport { width: 100vw; height: 100vh; overflow: auto; display: block; cursor: grab; }
+    #viewport:active { cursor: grabbing; }
+    
+    #container { position: relative; transform-origin: 0 0; transition: transform 0.05s ease-out; display: inline-block; }
+    img { display: block; image-rendering: high-quality; max-width: none; pointer-events: none; user-select: none; }
+
+    /* ZONA SPONSOR EN EL BUILDER */
+    .sponsor-zone { 
+        position: absolute; border: 2px dashed var(--oro-base); background: rgba(241, 196, 15, 0.4); 
+        box-sizing: border-box; border-radius: 4px; display: flex; align-items: center; justify-content: center;
+        font-size: 10px; color: white; font-weight: bold; text-shadow: 1px 1px 2px #000;
+        cursor: grab; transition: background 0.1s, border 0.1s; text-align: center; overflow: hidden; padding: 2px;
+        flex-direction: column; gap: 2px;
+    }
+    .sponsor-zone:active { cursor: grabbing; }
+    .sponsor-zone:hover { background: rgba(241, 196, 15, 0.7); z-index: 100; }
+    
+    .sponsor-zone.selected { border: 2px solid var(--morado-vip); background: rgba(155, 89, 182, 0.6); z-index: 200; box-shadow: 0 0 15px rgba(155, 89, 182, 0.8); }
+    
+    /* Indicador visual de DUAL en el builder */
+    .dual-badge { background: var(--morado-vip); font-size: 8px; padding: 2px 4px; border-radius: 3px; display: none; }
+    .sponsor-zone[data-dual="true"] .dual-badge { display: inline-block; }
+
+    /* PALETA IZQUIERDA */
+    #palette {
+        position: fixed; top: 10px; left: 10px; width: 300px; background: var(--panel-bg); padding: 20px; border-radius: 8px;
+        box-shadow: 5px 0 30px rgba(0,0,0,0.3); z-index: 20000; display: flex; flex-direction: column; gap: 12px;
+    }
+    #palette h3 { margin: 0; font-size: 16px; color: #333; text-transform: uppercase; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+    
+    .btn-create { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: 800; cursor: pointer; font-size: 13px; color: white; transition: all 0.2s; }
+    .btn-load { background: #8e44ad; margin-bottom: 10px; } .btn-load:hover { background: #9b59b6; }
+    .btn-small { background: #e67e22; } .btn-small:hover { background: #d35400; }
+    .btn-large { background: #f1c40f; color: #333; } .btn-large:hover { background: #f39c12; color: white; }
+    .btn-free { background: #34495e; } .btn-free:hover { background: #2c3e50; }
+
+    /* PROPIEDADES FLOTANTE (DERECHA) */
+    #prop-float {
+        position: fixed; top: 20px; right: 20px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.4); z-index: 20000; width: 280px; display: none; border-top: 4px solid var(--morado-vip);
+    }
+    #prop-float.active { display: block; animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    @keyframes popIn { from { transform: translateX(20px); opacity:0; } to { transform: translateX(0); opacity:1; } }
+
+    .input-group { margin-bottom: 10px; }
+    .input-group label { display: block; font-size: 10px; font-weight: 800; color: #64748b; margin-bottom: 4px; text-transform: uppercase;}
+    .input-group input[type="text"], .input-group input[type="number"] { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; box-sizing: border-box; }
+    .input-group input:focus { border-color: var(--morado-vip); outline: none; }
+
+    /* Estilo del Checkbox DUAL */
+    .checkbox-group { background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 10px; }
+    .checkbox-group input { width: 18px; height: 18px; cursor: pointer; }
+    .checkbox-group span { font-size: 12px; font-weight: 800; color: var(--morado-vip); }
+
+    .size-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #eee;}
+    
+    .action-buttons { display: flex; gap: 10px; margin-top: 15px; }
+    .btn-action { flex: 1; padding: 10px; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 12px; }
+    .btn-del { background: #ff4757; } .btn-del:hover { background: #ff6b81; }
+    .btn-clone { background: #0984e3; } .btn-clone:hover { background: #74b9ff; }
+
+    #export-bar { position: fixed; bottom: 20px; left: 330px; right: 20px; pointer-events: none; display: flex; justify-content: center; z-index: 20000; }
+    .btn-exp { pointer-events: auto; background: #2d3436; color: var(--oro-base); border: 2px solid var(--oro-base); padding: 12px 30px; border-radius: 50px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.4); transition: transform 0.2s; }
+    .btn-exp:hover { transform: translateY(-3px) scale(1.05); background: var(--oro-base); color: #111; }
+    #clipboard-area { position: absolute; left: -9999px; }
+</style>
+</head>
+<body>
+
+    <div id="palette">
+        <h3>⭐ Sponsor Builder</h3>
+        
+        <button class="btn-create btn-load" onclick="loadExistingSponsors()">📥 CARGAR SELLER.HTML ACTUAL</button>
+        
+        <div style="height: 1px; background: #eee; margin: 5px 0 15px 0;"></div>
+
+        <button class="btn-create btn-small" onclick="spawnSponsor('small')">🟩 NUEVO PEQUEÑO</button>
+        <button class="btn-create btn-large" onclick="spawnSponsor('large')">🟨 NUEVO GRANDE</button>
+        <button class="btn-create btn-free" onclick="spawnSponsor('free')">🟪 NUEVO ZONA LIBRE</button>
+        
+        <div style="font-size: 10px; color: #95a5a6; margin-top: 10px; background: #f1f2f6; padding: 10px; border-radius: 5px;">
+            <b>ATAJOS:</b><br>• <b>Supr</b>: Borrar seleccionado<br>• <b>Flechas</b>: Mover al milímetro<br>• <b>Shift + Flechas</b>: Movimiento rápido
+        </div>
+    </div>
+
+    <div id="prop-float">
+        <h4 style="margin: 0 0 15px 0; color: var(--morado-vip); font-size: 14px;">📝 Datos del Vendedor</h4>
+        
+        <div class="input-group">
+            <label>Nombre de la Tienda</label>
+            <input type="text" id="s-name" placeholder="Ej: PokeStore BCN">
+        </div>
+
+        <label class="checkbox-group">
+            <input type="checkbox" id="s-dual">
+            <span>✨ FORMATO DUAL (2 Logos)</span>
+        </label>
+
+        <!-- ¡Corrección aquí! Quitamos el style="display:none;" -->
+        <div class="input-group">
+            <label>URL del Logo</label>
+            <input type="text" id="s-logo" placeholder="https://...">
+        </div>
+        <div class="input-group">
+            <label>URL Instagram</label>
+            <input type="text" id="s-ig" placeholder="https://...">
+        </div>
+        <div class="input-group">
+            <label>URL Web</label>
+            <input type="text" id="s-web" placeholder="https://...">
+        </div>
+
+        <!-- Grid de 4 elementos para controlar posición y tamaño -->
+        <div class="size-grid">
+            <div class="input-group" style="margin:0;"><label>X (Left %)</label><input type="number" step="0.05" id="s-left"></div>
+            <div class="input-group" style="margin:0;"><label>Y (Top %)</label><input type="number" step="0.05" id="s-top"></div>
+            <div class="input-group" style="margin:0;"><label>Ancho (%)</label><input type="number" step="0.05" id="s-width"></div>
+            <div class="input-group" style="margin:0;"><label>Alto (%)</label><input type="number" step="0.05" id="s-height"></div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn-action btn-clone" onclick="cloneSelected()">📋 Clonar</button>
+            <button class="btn-action btn-del" onclick="deleteSelected()">🗑️ Eliminar</button>
+        </div>
+    </div>
+
+    <div id="export-bar">
+        <button class="btn-exp" onclick="exportHTML()">💾 EXPORTAR SELLER.HTML DEFINITIVO</button>
+    </div>
+
+    <div id="viewport">
+        <div id="container">
+            <img id="map-img" src="Hall 1.png" alt="Map Hall 1">
+            <div id="capa-mesas"></div> 
+        </div>
+    </div>
+
+    <textarea id="clipboard-area"></textarea>
+
+<script>
+    let scale = 0.5;
+    const container = document.getElementById('container');
+    const viewport = document.getElementById('viewport');
+    const mapImg = document.getElementById('map-img');
+    const capaMesas = document.getElementById('capa-mesas');
+    
+    const propPanel = document.getElementById('prop-float');
+    const inpName = document.getElementById('s-name');
+    const inpLogo = document.getElementById('s-logo');
+    const inpIg = document.getElementById('s-ig');
+    const inpWeb = document.getElementById('s-web');
+    const inpWidth = document.getElementById('s-width');
+    const inpHeight = document.getElementById('s-height');
+    const inpLeft = document.getElementById('s-left');
+    const inpTop = document.getElementById('s-top');
+    const inpDual = document.getElementById('s-dual');
+
+    let selectedSponsor = null;
+    let isDragging = false;
+    let dragOffset = { x: 0, y: 0 };
+    let sponsorCounter = 1;
+
+    window.onload = () => { if(mapImg.complete) init(); else mapImg.onload = init; };
+
+    function init() {
+        fit();
+        viewport.addEventListener('wheel', handleWheel, { passive: false });
+        loadExistingSponsors(true);
+    }
+
+    // --- CARGAR SPONSORS EXISTENTES ---
+    async function loadExistingSponsors(silent = false) {
+        try {
+            const res = await fetch('seller.html?v=' + Date.now());
+            if (!res.ok) throw new Error("No encontrado");
+            const html = await res.text();
+            
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            
+            const sponsors = tempDiv.querySelectorAll('.sponsor-zone');
+            if(sponsors.length > 0) {
+                capaMesas.innerHTML = '';
+                sponsors.forEach(sp => {
+                    const name = sp.getAttribute('data-name') || "Sponsor";
+                    
+                    sp.innerHTML = `
+                        <span>${name}</span>
+                        <span class="dual-badge">DUAL</span>
+                    `;
+                    sp.style.pointerEvents = 'auto';
+                    
+                    capaMesas.appendChild(sp);
+                    addInteractions(sp);
+                });
+                if(!silent) alert(`✅ Se han cargado ${sponsors.length} sponsors desde seller.html.`);
+            }
+        } catch (e) {
+            if(!silent) alert("⚠️ No se ha encontrado seller.html. Si es la primera vez, ignora este mensaje.");
+        }
+    }
+
+    // --- CREAR NUEVO SPONSOR ---
+    window.spawnSponsor = function(type) {
+        const sponsor = document.createElement('div');
+        sponsor.className = 'sponsor-zone';
+        
+        let w = 2, h = 2;
+        // NUEVAS MEDIDAS SOLICITADAS
+        if (type === 'small') { w = 1.10; h = 1.40; }
+        else if (type === 'large') { w = 5.0; h = 5.0; }
+        else if (type === 'free') { w = 5.0; h = 2.0; }
+
+        sponsor.style.width = w + '%'; sponsor.style.height = h + '%';
+        
+        const defaultName = "Sponsor " + sponsorCounter++;
+        sponsor.setAttribute('data-name', defaultName);
+        sponsor.setAttribute('data-logo', '');
+        sponsor.setAttribute('data-ig', '');
+        sponsor.setAttribute('data-web', '');
+        sponsor.setAttribute('data-dual', 'false');
+        
+        sponsor.innerHTML = `<span>${defaultName}</span><span class="dual-badge">DUAL</span>`;
+        
+        const rect = viewport.getBoundingClientRect();
+        const centerX = (rect.width / 2 - container.getBoundingClientRect().left) / scale;
+        const centerY = (rect.height / 2 - container.getBoundingClientRect().top) / scale;
+
+        sponsor.style.left = ((centerX / mapImg.naturalWidth) * 100).toFixed(4) + '%';
+        sponsor.style.top = ((centerY / mapImg.naturalHeight) * 100).toFixed(4) + '%';
+
+        capaMesas.appendChild(sponsor);
+        addInteractions(sponsor);
+        selectSponsor(sponsor);
+    }
+
+    // --- CLONAR SPONSOR ---
+    window.cloneSelected = function() {
+        if(!selectedSponsor) return;
+        
+        const clone = selectedSponsor.cloneNode(true);
+        clone.classList.remove('selected');
+        
+        // Desplazamos un poco para que se vea la copia
+        let currentLeft = parseFloat(clone.style.left);
+        let currentTop = parseFloat(clone.style.top);
+        clone.style.left = (currentLeft + 1.5).toFixed(4) + '%';
+        clone.style.top = (currentTop + 1.5).toFixed(4) + '%';
+        
+        // Actualizamos nombre visual
+        let currentName = clone.getAttribute('data-name') || "Sponsor";
+        let newName = currentName + " (Copia)";
+        clone.setAttribute('data-name', newName);
+        clone.querySelector('span:not(.dual-badge)').innerText = newName;
+        
+        capaMesas.appendChild(clone);
+        addInteractions(clone);
+        selectSponsor(clone); // Seleccionamos directamente el clon
+    }
+
+    // --- INTERACCIONES ---
+    function addInteractions(el) {
+        el.addEventListener('mousedown', (e) => {
+            if(e.button !== 0) return; 
+            e.stopPropagation();
+            selectSponsor(el);
+            isDragging = true;
+            const rect = el.getBoundingClientRect();
+            dragOffset.x = (e.clientX - rect.left) / scale;
+            dragOffset.y = (e.clientY - rect.top) / scale;
+        });
+    }
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging || !selectedSponsor) return;
+        e.preventDefault();
+        const containerRect = container.getBoundingClientRect();
+        let newX = ((e.clientX - containerRect.left) / scale) - dragOffset.x;
+        let newY = ((e.clientY - containerRect.top) / scale) - dragOffset.y;
+        
+        let calcLeft = (newX / mapImg.naturalWidth) * 100;
+        let calcTop = (newY / mapImg.naturalHeight) * 100;
+        
+        selectedSponsor.style.left = calcLeft.toFixed(4) + '%';
+        selectedSponsor.style.top = calcTop.toFixed(4) + '%';
+        
+        // Actualizar inputs en tiempo real al arrastrar
+        inpLeft.value = calcLeft.toFixed(4);
+        inpTop.value = calcTop.toFixed(4);
+    });
+
+    document.addEventListener('mouseup', () => isDragging = false);
+
+    function selectSponsor(el) {
+        if(selectedSponsor) selectedSponsor.classList.remove('selected');
+        selectedSponsor = el;
+        selectedSponsor.classList.add('selected');
+        propPanel.classList.add('active');
+        
+        inpName.value = selectedSponsor.getAttribute('data-name');
+        inpLogo.value = selectedSponsor.getAttribute('data-logo');
+        inpIg.value = selectedSponsor.getAttribute('data-ig');
+        inpWeb.value = selectedSponsor.getAttribute('data-web');
+        inpDual.checked = selectedSponsor.getAttribute('data-dual') === 'true';
+        
+        // Cargar medidas y posiciones exactas
+        inpWidth.value = parseFloat(selectedSponsor.style.width).toFixed(4);
+        inpHeight.value = parseFloat(selectedSponsor.style.height).toFixed(4);
+        inpLeft.value = parseFloat(selectedSponsor.style.left).toFixed(4);
+        inpTop.value = parseFloat(selectedSponsor.style.top).toFixed(4);
+    }
+
+    viewport.addEventListener('mousedown', (e) => {
+        if(e.target === viewport || e.target === container || e.target === mapImg) {
+            if(selectedSponsor) selectedSponsor.classList.remove('selected');
+            selectedSponsor = null;
+            propPanel.classList.remove('active');
+        }
+    });
+
+    // --- ACTUALIZADORES EN VIVO DESDE EL PANEL ---
+    inpName.addEventListener('input', (e) => {
+        if(selectedSponsor) {
+            selectedSponsor.setAttribute('data-name', e.target.value);
+            selectedSponsor.querySelector('span:not(.dual-badge)').innerText = e.target.value || "Sponsor";
+        }
+    });
+    inpLogo.addEventListener('input', (e) => { if(selectedSponsor) selectedSponsor.setAttribute('data-logo', e.target.value.trim()); });
+    inpIg.addEventListener('input', (e) => { if(selectedSponsor) selectedSponsor.setAttribute('data-ig', e.target.value.trim()); });
+    inpWeb.addEventListener('input', (e) => { if(selectedSponsor) selectedSponsor.setAttribute('data-web', e.target.value.trim()); });
+    inpDual.addEventListener('change', (e) => {
+        if(selectedSponsor) selectedSponsor.setAttribute('data-dual', e.target.checked ? "true" : "false");
+    });
+
+    inpWidth.addEventListener('input', (e) => { if(selectedSponsor && e.target.value) selectedSponsor.style.width = parseFloat(e.target.value) + '%'; });
+    inpHeight.addEventListener('input', (e) => { if(selectedSponsor && e.target.value) selectedSponsor.style.height = parseFloat(e.target.value) + '%'; });
+    inpLeft.addEventListener('input', (e) => { if(selectedSponsor && e.target.value) selectedSponsor.style.left = parseFloat(e.target.value) + '%'; });
+    inpTop.addEventListener('input', (e) => { if(selectedSponsor && e.target.value) selectedSponsor.style.top = parseFloat(e.target.value) + '%'; });
+
+    window.deleteSelected = function() {
+        if(selectedSponsor) { selectedSponsor.remove(); selectedSponsor = null; propPanel.classList.remove('active'); }
+    }
+
+    // --- MOVIMIENTO CON FLECHAS ---
+    document.addEventListener('keydown', (e) => {
+        if(!selectedSponsor) return;
+        if (document.activeElement.tagName === 'INPUT') return;
+        
+        if(e.key.startsWith('Arrow')) {
+            e.preventDefault();
+            const step = e.shiftKey ? 0.1 : 0.01; 
+            let t = parseFloat(selectedSponsor.style.top); let l = parseFloat(selectedSponsor.style.left);
+            
+            if(e.key === 'ArrowUp') t -= step; if(e.key === 'ArrowDown') t += step;
+            if(e.key === 'ArrowLeft') l -= step; if(e.key === 'ArrowRight') l += step;
+            
+            selectedSponsor.style.top = t.toFixed(4) + '%'; 
+            selectedSponsor.style.left = l.toFixed(4) + '%';
+            
+            // Actualizar inputs visibles
+            inpTop.value = t.toFixed(4);
+            inpLeft.value = l.toFixed(4);
+        }
+        
+        if(e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+    });
+
+    function handleWheel(e) { e.preventDefault(); scale = Math.max(0.05, Math.min(scale * (e.deltaY > 0 ? 0.9 : 1.1), 15)); container.style.transform = `scale(${scale})`; }
+    function fit() { scale = (window.innerWidth / (mapImg.naturalWidth || 4000)) * 0.9; container.style.transform = `scale(${scale})`; }
+
+    // --- EXPORTAR ---
+    window.exportHTML = function() {
+        let html = "\n";
+        const mapRect = mapImg.getBoundingClientRect();
+        const sponsors = document.querySelectorAll('.sponsor-zone');
+
+        if(sponsors.length === 0) return alert("No hay sponsors en el mapa para exportar.");
+
+        sponsors.forEach(s => {
+            const rect = s.getBoundingClientRect();
+            const l = ((rect.left - mapRect.left) / mapRect.width) * 100;
+            const t = ((rect.top - mapRect.top) / mapRect.height) * 100;
+            const w = (rect.width / mapRect.width) * 100;
+            const h = (rect.height / mapRect.height) * 100;
+
+            const name = s.getAttribute('data-name') || '';
+            const logo = s.getAttribute('data-logo') || '';
+            const ig = s.getAttribute('data-ig') || '';
+            const web = s.getAttribute('data-web') || '';
+            const dual = s.getAttribute('data-dual') === 'true' ? ' data-dual="true"' : '';
+
+            html += `<div class="sponsor-zone" style="left: ${l.toFixed(4)}%; top: ${t.toFixed(4)}%; width: ${w.toFixed(4)}%; height: ${h.toFixed(4)}%;" data-name="${name}" data-logo="${logo}" data-ig="${ig}" data-web="${web}"${dual}></div>\n`;
+        });
+
+        html += "";
+        const area = document.getElementById('clipboard-area'); area.value = html; area.select(); document.execCommand('copy');
+        alert(`¡Oro puro guardado! 🏆 \nSe han exportado ${sponsors.length} sponsors.\n\nPégalos en tu seller.html y el mapa se actualizará solo.`);
+    }
+</script>
+</body>
+</html>
